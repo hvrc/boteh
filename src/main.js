@@ -703,6 +703,7 @@ function handleFilterResonanceChange(value) {
 
 function shutdownSystem() {
     try {
+        // Stop audio first
         if (audioEngine) {
             audioEngine.stopArpeggio();
             // Stop all currently playing notes
@@ -711,19 +712,37 @@ function shutdownSystem() {
                     audioEngine.stopNote(cell.x, cell.y);
                 });
             }
-            handDetector.getActiveCells().forEach(cell => {
-                audioEngine.stopNote(cell.x, cell.y);
-            });
+            if (handDetector) {
+                handDetector.getActiveCells().forEach(cell => {
+                    audioEngine.stopNote(cell.x, cell.y);
+                });
+            }
             audioEngine = null;
         }
+
+        // Stop camera and hand detection with proper cleanup
         if (handDetector) {
-            handDetector.stop();
-            handDetector = null;
+            // Add a small delay to ensure audio is cleaned up first
+            setTimeout(() => {
+                handDetector.stop();
+                handDetector = null;
+            }, 100);
         }
         
-        // Hide video and disable controls
+        // Hide video immediately
         UI.video.classList.add('hidden');
+        
+        // Disable controls
         UI.controls.classList.add('disabled');
+        
+        // Disable all sliders except master switch
+        Object.entries(UI).forEach(([key, element]) => {
+            if (element && 
+                element !== UI.masterSwitch && 
+                element.tagName === 'INPUT') {
+                element.disabled = true;
+            }
+        });
         
         // Clear canvas but keep grid
         const ctx = UI.canvas.getContext('2d');
@@ -734,7 +753,7 @@ function shutdownSystem() {
         lastActiveCells = new Set();
         heldNotes = null;
     } catch (error) {
-        console.error('Error shutting down:', error);
+        console.warn('Non-critical error during shutdown:', error);
     }
 }
 

@@ -42,9 +42,57 @@ export class HandDetector {
     });
   }
 
-  start(onResults) {
-    this.hands.onResults(onResults);
-    this.camera.start();
+  async start(onResults) {
+    try {
+      // Ensure hands is initialized
+      if (!this.hands) {
+        this.setupHandDetection();
+      }
+      
+      // Set callback first
+      await this.hands.onResults(onResults);
+      
+      // Then start camera
+      if (this.camera) {
+        await this.camera.start();
+      }
+    } catch (error) {
+      console.error('Error starting HandDetector:', error);
+      throw error;
+    }
+  }
+
+  stop() {
+    try {
+        // Stop camera first
+        if (this.camera) {
+            this.camera.stop();
+            this.camera = null;
+        }
+        
+        // Remove callback before closing hands
+        if (this.hands) {
+            this.hands.onResults(null);
+            // Add small delay before closing hands
+            setTimeout(() => {
+                try {
+                    this.hands.close();
+                } catch (e) {
+                    // Ignore errors during cleanup
+                }
+                this.hands = null;
+            }, 100);
+        }
+
+        // Clear states
+        this.activeCells.clear();
+        this.expandedCells.clear();
+        this.fingerStates.clear();
+        this.fingerDirections.clear();
+        
+    } catch (error) {
+        console.warn('Non-critical error during HandDetector cleanup:', error);
+    }
   }
 
   smoothTransition(currentValue, targetValue, smoothFactor = 0.2) {
