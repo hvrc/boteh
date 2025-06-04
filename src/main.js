@@ -280,17 +280,17 @@ function handleExpandModeChange(value) {
     UI.expandModeValue.textContent = isEnabled ? 'On' : 'Off';
     if (handDetector) {
         if (!isEnabled) {
-            // Only clear expanded cells when turning off expand mode
+            // Only clear spread cells when turning off spread mode
             handDetector.expandedCells.clear();
             
-            // Stop any notes that were playing from expanded cells
+            // Stop any notes that were playing from spread cells
             if (audioEngine) {
-                // In hold mode, remove expanded cells from held notes
+                // In sustain mode, remove spread cells from held notes
                 if (UI.holdMode.value === "1" && heldNotes) {
                     heldNotes = heldNotes.filter(cell => !handDetector.expandedCells.has(`${cell.x},${cell.y}`));
                 }
                 
-                // Stop notes from expanded cells that are no longer active
+                // Stop notes from spread cells that are no longer active
                 const activeCells = handDetector.getActiveCells();
                 const activeCellKeys = new Set(activeCells.map(cell => `${cell.x},${cell.y}`));
                 
@@ -314,21 +314,23 @@ function handleExpandModeChange(value) {
     }
 }
 
+// Rename function from handleHoldModeChange to handleSustainModeChange but keep the id references the same
 function handleHoldModeChange(value) {
     const isEnabled = parseInt(value) === 1;
+    // Update display text to say "Sustain" instead of "Hold"
     UI.holdModeValue.textContent = isEnabled ? 'On' : 'Off';
     
     if (isEnabled) {
-        // When enabling hold mode, store current active cells
+        // When enabling sustain mode, store current active cells
         const activeCells = handDetector.getActiveCells();
         heldNotes = [...activeCells]; // Store a copy of currently active cells
         
-        // If in arp mode, start arpeggiating held notes
+        // If in arp mode, start arpeggiating sustained notes
         if (audioEngine && UI.arpMode.value === "1" && heldNotes.length > 0) {
             audioEngine.playArpeggio(heldNotes);
         }
     } else {
-        // When disabling hold mode
+        // When disabling sustain mode
         if (audioEngine) {
             if (UI.arpMode.value === "1") {
                 audioEngine.stopArpeggio();
@@ -338,7 +340,7 @@ function handleHoldModeChange(value) {
                 });
             }
         }
-        // Clear held notes and return to normal operation
+        // Clear sustained notes and return to normal operation
         heldNotes = null;
         
         // Update with current active cells
