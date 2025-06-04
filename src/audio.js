@@ -634,16 +634,23 @@ scheduleNoteOff(cell, time) {
     this.release = release;
   }
   setReverb(wetAmount) {
-    // Convert percentage to 0-1 range
-    const wet = Math.min(Math.max(wetAmount / 100, 0), 1);
-    const dry = Math.sqrt(1 - wet); // Square root for more natural power curve
-    const wetGain = Math.sqrt(wet) * 5; // Boost wet signal by 50% to compensate for reverb loss
+    // Convert percentage to 0-1 range and adjust the curve
+    const wet = wetAmount / 100;
+    
+    // Calculate dry/wet mix with better curves
+    const dryGain = Math.cos(wet * 0.5 * Math.PI);
+    const wetGain = Math.sin(wet * 0.5 * Math.PI);
 
     // Update gains with smooth transition
     const now = this.audioContext.currentTime;
-    this.dryGain.gain.linearRampToValueAtTime(dry, now + 0.1);
-    this.wetGain.gain.linearRampToValueAtTime(wetGain, now + 0.1);
-  }
+    const transitionTime = 0.016; // Smooth 60fps transition
+    
+    this.dryGain.gain.cancelScheduledValues(now);
+    this.wetGain.gain.cancelScheduledValues(now);
+    
+    this.dryGain.gain.setTargetAtTime(dryGain, now, transitionTime);
+    this.wetGain.gain.setTargetAtTime(wetGain * 10, now, transitionTime); // Boost wet signal
+}
 
   setMainOscType(type) {
     this.mainOscType = type;

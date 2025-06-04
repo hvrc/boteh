@@ -363,31 +363,39 @@ function handleHoldModeChange(value) {
     }
 }
 
-// Update existing arp mode handler to work with slider
+// Update handleArpModeChange function
 function handleArpModeChange(value) {
     const isArpMode = parseInt(value) === 1;
     UI.arpModeValue.textContent = isArpMode ? 'On' : 'Off';
     UI.arpMode.dataset.state = isArpMode ? 'on' : 'off';
     
     if (audioEngine) {
-        // Stop any currently playing notes when switching modes
-        if (!isArpMode) {
-            audioEngine.stopArpeggio();
-        }
+        // First, stop everything immediately
+        audioEngine.stopArpeggio();
         
-        if (UI.holdMode.value === "1" && heldNotes) {
-            // Replay held notes in new mode
-            if (isArpMode) {
-                audioEngine.playArpeggio(heldNotes);
-            } else {
-                heldNotes.forEach(cell => {
-                    audioEngine.playNote(cell.x, cell.y);
-                });
-            }
-        } else {
-            // Handle currently active cells
-            const activeCells = handDetector.getActiveCells();
-            if (activeCells.length > 0) {
+        // Clear all active notes first
+        if (audioEngine.oscillators.size > 0) {
+            const currentlyActive = Array.from(audioEngine.oscillators.keys());
+            currentlyActive.forEach(key => {
+                const [x, y] = key.split(',').map(Number);
+                audioEngine.stopNote(x, y);
+            });
+        }
+
+        // Force clear all oscillators
+        audioEngine.oscillators.clear();
+        
+        // Reset any arpeggiator state
+        audioEngine.activeNotes.clear();
+        audioEngine.lastNotePlayed = null;
+
+        // Wait for cleanup before starting new mode
+        setTimeout(() => {
+            const activeCells = UI.holdMode.value === "1" && heldNotes ? 
+                heldNotes : 
+                handDetector.getActiveCells();
+
+            if (activeCells && activeCells.length > 0) {
                 if (isArpMode) {
                     audioEngine.playArpeggio(activeCells);
                 } else {
@@ -396,7 +404,7 @@ function handleArpModeChange(value) {
                     });
                 }
             }
-        }
+        }, 100); // Longer delay to ensure complete cleanup
     }
 }
 
@@ -636,30 +644,43 @@ async function initializeApp() {
                 const currentActiveCellsSet = new Set(activeCells.map(cell => `${cell.x},${cell.y}`));
                 
                 if (JSON.stringify([...currentActiveCellsSet]) !== JSON.stringify([...lastActiveCells])) {
-                    // Only handle note stopping if not in arp mode
-                    if (UI.arpMode.value === "0") {
-                        [...lastActiveCells].forEach(cellKey => {
-                            if (!currentActiveCellsSet.has(cellKey)) {
-                                const [x, y] = cellKey.split(',').map(Number);
+                    // Stop all notes if there are no active cells
+                    if (currentActiveCellsSet.size === 0) {
+                        if (audioEngine) {
+                            // Force stop ALL notes and clear oscillators
+                            audioEngine.stopArpeggio();
+                            Array.from(audioEngine.oscillators.keys()).forEach(key => {
+                                const [x, y] = key.split(',').map(Number);
                                 audioEngine.stopNote(x, y);
-                            }
-                        });
-                    }
+                            });
+                            
+                            audioEngine.oscillators.clear(); // Force clear all oscillators
+                        }
+                    } else {
+                        // Normal note handling for active cells
+                        if (UI.arpMode.value === "0") {
+                            // First stop any notes that are no longer active
+                            [...lastActiveCells].forEach(cellKey => {
+                                if (!currentActiveCellsSet.has(cellKey)) {
+                                    const [x, y] = cellKey.split(',').map(Number);
+                                    audioEngine.stopNote(x, y);
+                                }
+                            });
 
-                    if (audioEngine) {
-                        if (currentActiveCellsSet.size > 0) {
-                            if (UI.arpMode.value === "1") {
-                                audioEngine.playArpeggio(activeCells);
-                            } else {
-                                // In normal mode, play all active cells sustained
-                                activeCells.forEach(cell => {
-                                    audioEngine.playNote(cell.x, cell.y);
-                                });
-                            }
-                        } else {
-                            if (UI.arpMode.value === "1") {
-                                audioEngine.stopArpeggio();
-                            }
+                            // Force clear any lingering notes
+                            Array.from(audioEngine.oscillators.keys()).forEach(key => {
+                                if (!currentActiveCellsSet.has(key)) {
+                                    const [x, y] = key.split(',').map(Number);
+                                    audioEngine.stopNote(x, y);
+                                }
+                            });
+
+                            // Then play currently active notes
+                            activeCells.forEach(cell => {
+                                audioEngine.playNote(cell.x, cell.y);
+                            });
+                        } else if (UI.arpMode.value === "1") {
+                            audioEngine.playArpeggio(activeCells);
                         }
                     }
                     
