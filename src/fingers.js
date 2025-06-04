@@ -57,114 +57,111 @@ export class HandDetector {
   }
   
   drawFingerDots(landmarks) {
-    const fingerTipIndices = [4, 8, 12, 16, 20];
-    // Update this line to check slider value instead of checked property
+    const fingerTipIndices = [4, 8, 12, 16, 20]; // Thumb, Index, Middle, Ring, Pinky
     const expandMode = document.getElementById('expandMode').value === "1";
     
-    // Clear both sets at the start of each frame
-    this.activeCells.clear();
-    this.expandedCells.clear();
-    
     fingerTipIndices.forEach((tipIndex) => {
-      const tipPosition = landmarks[tipIndex];
-      
-      let minDistance = 1;
-      fingerTipIndices.forEach((otherTipIndex) => {
-        if (otherTipIndex !== tipIndex) {
-          const otherTipPosition = landmarks[otherTipIndex];
-          const distance = Math.hypot(
-            tipPosition.x - otherTipPosition.x,
-            tipPosition.y - otherTipPosition.y
-          );
-          minDistance = Math.min(minDistance, distance);
-        }
-      });
-
-      // Get or initialize finger state
-      if (!this.fingerStates.has(tipIndex)) {
-        this.fingerStates.set(tipIndex, {
-          normalizedDistance: 0,
-          currentRed: 255,
-          currentGreen: 0,
-          currentAlpha: 0
-        });
-      }
-      const state = this.fingerStates.get(tipIndex);
-
-      // Calculate target values
-      let targetNormalized = Math.min(
-        Math.max(
-          (minDistance - HandDetector.minDistance) / 
-          (HandDetector.maxDistance - HandDetector.minDistance), 
-          0
-        ), 
-        1
-      );
-      
-      // Apply exponential curve with hysteresis
-      targetNormalized = Math.pow(targetNormalized, 2.5);
-
-      // Smooth transitions
-      state.normalizedDistance = this.smoothTransition(
-        state.normalizedDistance, 
-        targetNormalized,
-        0.15 // Adjust this value to control transition speed (lower = smoother but slower)
-      );
-
-      // Calculate color components with smooth transitions
-      const targetRed = Math.round(255 * (1 - state.normalizedDistance));
-      const targetGreen = Math.round(255 * state.normalizedDistance);
-      const targetAlpha = state.normalizedDistance;
-
-      state.currentRed = this.smoothTransition(state.currentRed, targetRed);
-      state.currentGreen = this.smoothTransition(state.currentGreen, targetGreen);
-      state.currentAlpha = this.smoothTransition(state.currentAlpha, targetAlpha);
-
-      // Draw with smoothed values
-      this.canvasContext.beginPath();
-      this.canvasContext.arc(
-        tipPosition.x * this.canvasElement.width, 
-        tipPosition.y * this.canvasElement.height, 
-        10, 
-        0, 
-        2 * Math.PI
-      );
-
-      this.canvasContext.fillStyle = `rgba(${state.currentRed}, ${state.currentGreen}, 0, ${state.currentAlpha})`;
-      this.canvasContext.fill();
-
-      // After drawing the circle, check if it's fully green
-      if (state.currentGreen > 240 && state.currentAlpha > 0.9) {
-        const cell = this.getGridCell(tipPosition.x, tipPosition.y);
-        const cellKey = `${cell.x},${cell.y}`;
-        this.activeCells.add(cellKey);
-
-        // If expand mode is on, handle expanded cells
-        if (expandMode) {
-          // Get or create direction for this specific finger
-          if (!this.fingerDirections.has(tipIndex)) {
-            this.fingerDirections.set(tipIndex, this.getRandomDirection());
-          }
-          
-          const direction = this.fingerDirections.get(tipIndex);
-          const newX = cell.x + direction.x;
-          const newY = cell.y + direction.y;
-          
-          // Check if new position is within grid bounds
-          if (newX >= 0 && newX < HandDetector.GRID_SIZE && 
-              newY >= 0 && newY < HandDetector.GRID_SIZE) {
-            const expandedCellKey = `${newX},${newY}`;
-            // Only add to expanded cells if not already an active cell
-            if (!this.activeCells.has(expandedCellKey)) {
-              this.expandedCells.add(expandedCellKey);
-              this.activeCells.add(expandedCellKey);
+        const tipPosition = landmarks[tipIndex];
+        
+        // Calculate minimum distance to other finger tips on the SAME hand
+        let minDistance = 1;
+        fingerTipIndices.forEach((otherTipIndex) => {
+            if (otherTipIndex !== tipIndex) {
+                const otherTipPosition = landmarks[otherTipIndex];
+                const distance = Math.hypot(
+                    tipPosition.x - otherTipPosition.x,
+                    tipPosition.y - otherTipPosition.y
+                );
+                minDistance = Math.min(minDistance, distance);
             }
-          }
+        });
+
+        // Get or initialize finger state
+        if (!this.fingerStates.has(tipIndex)) {
+            this.fingerStates.set(tipIndex, {
+                normalizedDistance: 0,
+                currentRed: 255,
+                currentGreen: 0,
+                currentAlpha: 0,
+                lastActiveTime: 0
+            });
         }
-      } else {
-        // If finger is not active, remove its direction to allow new random direction
-        this.fingerDirections.delete(tipIndex);
-      }
+        const state = this.fingerStates.get(tipIndex);
+
+        // Adjust distance thresholds for better recognition
+        const MIN_DISTANCE = 0.02;  // Reduced from 0.03
+        const MAX_DISTANCE = 0.08;  // Increased from 0.07
+
+        // Calculate target values with adjusted thresholds
+        let targetNormalized = Math.min(
+            Math.max(
+                (minDistance - MIN_DISTANCE) / 
+                (MAX_DISTANCE - MIN_DISTANCE), 
+                0
+            ), 
+            1
+        );
+
+        // Add hysteresis to prevent flickering
+        const now = performance.now();
+        const HYSTERESIS_TIME = 100; // ms
+        if (targetNormalized > 0.8 && now - state.lastActiveTime > HYSTERESIS_TIME) {
+            targetNormalized = 1;
+            state.lastActiveTime = now;
+        }
+
+        // Smoother transitions
+        state.normalizedDistance = this.smoothTransition(
+            state.normalizedDistance, 
+            targetNormalized,
+            0.3  // Increased smoothing factor
+        );
+
+        // Calculate color with smoother transitions
+        state.currentRed = this.smoothTransition(state.currentRed, 255 * (1 - state.normalizedDistance));
+        state.currentGreen = this.smoothTransition(state.currentGreen, 255 * state.normalizedDistance);
+        state.currentAlpha = this.smoothTransition(state.currentAlpha, state.normalizedDistance);
+
+        // Draw finger dot
+        this.canvasContext.beginPath();
+        this.canvasContext.arc(
+            tipPosition.x * this.canvasElement.width, 
+            tipPosition.y * this.canvasElement.height, 
+            10, 
+            0, 
+            2 * Math.PI
+        );
+
+        this.canvasContext.fillStyle = `rgba(${state.currentRed}, ${state.currentGreen}, 0, ${state.currentAlpha})`;
+        this.canvasContext.fill();
+
+        // Activate cell if finger is green enough
+        if (state.currentGreen > 200 && state.currentAlpha > 0.8) {
+            const cell = this.getGridCell(tipPosition.x, tipPosition.y);
+            const cellKey = `${cell.x},${cell.y}`;
+            this.activeCells.add(cellKey);
+
+            // Handle expand mode
+            if (expandMode) {
+                if (!this.fingerDirections.has(tipIndex)) {
+                    this.fingerDirections.set(tipIndex, this.getRandomDirection());
+                }
+                const direction = this.fingerDirections.get(tipIndex);
+                const newX = cell.x + direction.x;
+                const newY = cell.y + direction.y;
+                
+                if (newX >= 0 && newX < HandDetector.GRID_SIZE && 
+                    newY >= 0 && newY < HandDetector.GRID_SIZE) {
+                    const expandedCellKey = `${newX},${newY}`;
+                    if (!this.activeCells.has(expandedCellKey)) {
+                        this.expandedCells.add(expandedCellKey);
+                        this.activeCells.add(expandedCellKey);
+                    }
+                }
+            }
+        } else {
+            this.fingerDirections.delete(tipIndex);
+        }
     });
   }
 
