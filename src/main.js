@@ -57,6 +57,12 @@ const UI = {
     subOscTypeValue: document.getElementById('subOscTypeValue'),
     pitchSlider: document.getElementById('pitchSlider'),
     pitchValue: document.getElementById('pitchValue'),
+    
+    // New filter UI elements
+    filterCutoffSlider: document.getElementById('filterCutoffSlider'),
+    filterCutoffValue: document.getElementById('filterCutoffValue'),
+    filterResonanceSlider: document.getElementById('filterResonanceSlider'),
+    filterResonanceValue: document.getElementById('filterResonanceValue'),
 };
 
 // State
@@ -514,6 +520,14 @@ async function initializeApp() {
             }
         });
 
+        // Initialize filter sliders
+        UI.filterCutoffSlider.addEventListener('input', (e) => handleFilterCutoffChange(e.target.value));
+        UI.filterResonanceSlider.addEventListener('input', (e) => handleFilterResonanceChange(e.target.value));
+        
+        // Initialize filter values
+        handleFilterCutoffChange(UI.filterCutoffSlider.value);
+        handleFilterResonanceChange(UI.filterResonanceSlider.value);
+
         // Main render loop
         handDetector.start((results) => {
             UI.canvas.width = UI.video.width = CANVAS_SIZE;
@@ -640,5 +654,25 @@ function handlePitchChange(value) {
     UI.pitchValue.textContent = `${semitones} st`;
     if (audioEngine) {
         audioEngine.setPitchShift(semitones);
+    }
+}
+
+function handleFilterCutoffChange(value) {
+    const frequency = parseInt(value);
+    // Format display value
+    const displayValue = frequency >= 1000 ? 
+        `${(frequency/1000).toFixed(1)}kHz` : 
+        `${frequency}Hz`;
+    UI.filterCutoffValue.textContent = displayValue;
+    if (audioEngine) {
+        audioEngine.setFilterCutoff(frequency);
+    }
+}
+
+function handleFilterResonanceChange(value) {
+    const resonance = parseFloat(value);
+    UI.filterResonanceValue.textContent = resonance.toFixed(1);
+    if (audioEngine) {
+        audioEngine.setFilterResonance(resonance);
     }
 }
