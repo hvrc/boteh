@@ -11,8 +11,11 @@ const WAVE_TYPES = ['sine', 'square', 'sawtooth', 'triangle'];
 const UI = {
     video: document.getElementById('webcam'),
     canvas: document.getElementById('canvas'),
-    startButton: document.getElementById('startButton'),
     controls: document.querySelector('.controls'),
+    
+    // Master switch elements
+    masterSwitch: document.getElementById('masterSwitch'),
+    masterSwitchValue: document.getElementById('masterSwitchValue'),
     
     // Sliders and values
     volumeSlider: document.getElementById('volumeSlider'),
@@ -405,15 +408,18 @@ async function initializeApp() {
         // Validate UI elements first
         validateUIElements();
 
+        // Show video and enable controls
+        UI.video.classList.remove('hidden');
+        UI.controls.classList.remove('disabled');
+
         // Initialize audio engine first
         audioEngine = new AudioEngine();
         
         // Initialize hand detector
         handDetector = new HandDetector(UI.video, UI.canvas);
         
-        // Start tracking and hide the button
-        UI.startButton.classList.add('hidden');
-        UI.controls.classList.remove('hidden');
+        // Remove this line
+        // UI.startButton.classList.add('hidden');
         
         // Initialize BPM slider with current tempo
         UI.bpmSlider.value = audioEngine.tempo;
@@ -641,21 +647,30 @@ async function initializeApp() {
         });
     } catch (error) {
         console.error('Error initializing app:', error);
-        alert('Error initializing the application. Please check if all UI elements exist.');
-        if (UI.controls) {
-            UI.controls.classList.add('hidden');
-        }
+        alert('Error initializing the application. Please check camera permissions.');
+        
+        // Reset master switch
+        UI.masterSwitch.value = "0";
+        UI.masterSwitchValue.textContent = 'Off';
+        UI.controls.classList.add('disabled');
+        UI.video.classList.add('hidden');
     }
 }
 
 // Make sure the DOM is fully loaded before adding event listener
 document.addEventListener('DOMContentLoaded', () => {
-    const startButton = document.getElementById('startButton');
-    if (startButton) {
-        startButton.addEventListener('click', initializeApp);
-    } else {
-        console.error('Start button not found');
-    }
+    // Initialize canvas size
+    UI.canvas.width = UI.canvas.height = CANVAS_SIZE;
+    
+    // Draw empty grid
+    const ctx = UI.canvas.getContext('2d');
+    drawGrid(ctx, CANVAS_SIZE, CANVAS_SIZE, HandDetector.GRID_SIZE, []);
+    
+    // Set initial UI state
+    UI.controls.classList.add('disabled');
+    
+    // Add master switch listener
+    UI.masterSwitch.addEventListener('input', handleMasterSwitch);
 });
 
 function handlePitchChange(value) {
@@ -683,5 +698,53 @@ function handleFilterResonanceChange(value) {
     UI.filterResonanceValue.textContent = resonance.toFixed(1);
     if (audioEngine) {
         audioEngine.setFilterResonance(resonance);
+    }
+}
+
+function shutdownSystem() {
+    try {
+        if (audioEngine) {
+            audioEngine.stopArpeggio();
+            // Stop all currently playing notes
+            if (heldNotes) {
+                heldNotes.forEach(cell => {
+                    audioEngine.stopNote(cell.x, cell.y);
+                });
+            }
+            handDetector.getActiveCells().forEach(cell => {
+                audioEngine.stopNote(cell.x, cell.y);
+            });
+            audioEngine = null;
+        }
+        if (handDetector) {
+            handDetector.stop();
+            handDetector = null;
+        }
+        
+        // Hide video and disable controls
+        UI.video.classList.add('hidden');
+        UI.controls.classList.add('disabled');
+        
+        // Clear canvas but keep grid
+        const ctx = UI.canvas.getContext('2d');
+        ctx.clearRect(0, 0, UI.canvas.width, UI.canvas.height);
+        drawGrid(ctx, CANVAS_SIZE, CANVAS_SIZE, HandDetector.GRID_SIZE, []);
+        
+        // Reset state
+        lastActiveCells = new Set();
+        heldNotes = null;
+    } catch (error) {
+        console.error('Error shutting down:', error);
+    }
+}
+
+function handleMasterSwitch(e) {
+    const isOn = parseInt(e.target.value) === 1;
+    UI.masterSwitchValue.textContent = isOn ? 'On' : 'Off';
+    
+    if (isOn) {
+        initializeApp();
+    } else {
+        shutdownSystem();
     }
 }

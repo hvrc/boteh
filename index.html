@@ -7,12 +7,18 @@
 </head>
 <body>
   <div class="container">
-    <video id="webcam" autoplay playsinline></video>
+    <video id="webcam" autoplay playsinline class="hidden"></video>
     <canvas id="canvas"></canvas>
-    <button id="startButton">Start Musical Interface</button>
   </div>
-  <div class="controls hidden">
+  <div class="controls">
     <div class="slider-group">
+      <!-- Add master switch as first control -->
+      <div class="slider-container master-control">
+        <label for="masterSwitch">Power:</label>
+        <input type="range" id="masterSwitch" min="0" max="1" value="0" step="1">
+        <span class="value-display" id="masterSwitchValue">Off</span>
+      </div>
+
       <!-- Main Controls -->
       <div class="slider-container">
         <label for="volumeSlider">Volume:</label>

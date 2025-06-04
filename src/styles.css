@@ -51,6 +51,17 @@ body {
   gap: 10px;
   width: min(640px, 100vw);
   box-sizing: border-box;
+  opacity: 1;
+}
+
+.controls.disabled .slider-container:not(.master-control) {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.master-control {
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
 .slider-container {
@@ -159,4 +170,12 @@ input[type="range"]::-webkit-slider-thumb {
   background: #2196F3;
   border-radius: 50%;
   cursor: pointer;
+}
+
+.container canvas {
+  background-color: #1a1a1a;  /* Dark background for empty state */
+}
+
+#webcam.hidden {
+  display: none;
 }
