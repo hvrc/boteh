@@ -4,7 +4,7 @@ import { Camera } from '@mediapipe/camera_utils';
 export class HandDetector {
   static minDistance = 0.03;
   static maxDistance = 0.07;
-  static GRID_SIZE = 15; // Define grid size once here
+  static GRID_SIZE = 15; // Default grid size
   
   constructor(videoElement, canvasElement) {
     this.videoElement = videoElement;
@@ -15,6 +15,7 @@ export class HandDetector {
     this.fingerDirections = new Map(); // Track expand direction for each finger
     this.expandDirection = this.getRandomDirection();
     this.expandedCells = new Set(); // Track expanded cells separately
+    this.gridSize = HandDetector.GRID_SIZE;
     this.setupHandDetection();
   }
 
@@ -98,9 +99,15 @@ export class HandDetector {
   smoothTransition(currentValue, targetValue, smoothFactor = 0.2) {
     return currentValue + (targetValue - currentValue) * smoothFactor;
   }
+  setGridSize(size) {
+    this.gridSize = size;
+    HandDetector.GRID_SIZE = size; // Add this line to keep static and instance in sync
+    this.activeCells.clear();
+    this.expandedCells.clear();
+  }
   getGridCell(x, y) {
-    const cellX = Math.floor(x * HandDetector.GRID_SIZE);
-    const cellY = Math.floor(y * HandDetector.GRID_SIZE);
+    const cellX = Math.floor(x * this.gridSize);
+    const cellY = Math.floor(y * this.gridSize);
     return { x: cellX, y: cellY };
   }
   

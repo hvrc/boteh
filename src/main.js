@@ -68,6 +68,10 @@ const UI = {
     filterResonanceValue: document.getElementById('filterResonanceValue'),
     delayFeedbackSlider: document.getElementById('delayFeedbackSlider'),
     delayFeedbackValue: document.getElementById('delayFeedbackValue'),
+
+    // Add grid size controls
+    gridSizeSlider: document.getElementById('gridSizeSlider'),
+    gridSizeValue: document.getElementById('gridSizeValue'),
 };
 
 // State
@@ -545,6 +549,13 @@ async function initializeApp() {
         handleFilterCutoffChange(UI.filterCutoffSlider.value);
         handleFilterResonanceChange(UI.filterResonanceSlider.value);
 
+        // Initialize grid size slider
+        UI.gridSizeSlider.value = HandDetector.GRID_SIZE;
+        UI.gridSizeValue.textContent = HandDetector.GRID_SIZE;
+        
+        // Add grid size change listener
+        UI.gridSizeSlider.addEventListener('input', (e) => handleGridSizeChange(e.target.value));
+
         // Main render loop
         handDetector.start((results) => {
             UI.canvas.width = UI.video.width = CANVAS_SIZE;
@@ -768,4 +779,43 @@ function handleMasterSwitch(e) {
     } else {
         shutdownSystem();
     }
+}
+
+// Add this function with the other handlers
+function handleGridSizeChange(value) {
+    const size = parseInt(value);
+    UI.gridSizeValue.textContent = size;
+    
+    // Update both static and instance grid size
+    HandDetector.GRID_SIZE = size;  // Add this line
+    
+    // Update grid size in HandDetector
+    if (handDetector) {
+        handDetector.setGridSize(size);
+        
+        // Stop all currently playing notes
+        if (audioEngine) {
+            audioEngine.stopArpeggio();
+            if (heldNotes) {
+                heldNotes.forEach(cell => {
+                    audioEngine.stopNote(cell.x, cell.y);
+                });
+            }
+            handDetector.getActiveCells().forEach(cell => {
+                audioEngine.stopNote(cell.x, cell.y);
+            });
+            
+            // Reset held notes
+            heldNotes = null;
+            lastActiveCells = new Set();
+            
+            // Update audio engine scale mapping
+            audioEngine.setupScales(size);
+        }
+    }
+    
+    // Redraw grid
+    const ctx = UI.canvas.getContext('2d');
+    ctx.clearRect(0, 0, UI.canvas.width, UI.canvas.height);
+    drawGrid(ctx, CANVAS_SIZE, CANVAS_SIZE, size, []);
 }

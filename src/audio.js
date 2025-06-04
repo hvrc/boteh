@@ -189,30 +189,29 @@ export class AudioEngine {
     this.reverbNode.buffer = impulse;
   }
 
-  setupScales() {
+  setupScales(gridSize = HandDetector.GRID_SIZE) {
     const baseFrequency = 220.00; // A3 as base frequency
     this.frequencies = [];
     const scale = AudioEngine.SCALES[this.currentScale];
     
-    for (let y = 0; y < HandDetector.GRID_SIZE; y++) {
-      for (let x = 0; x < HandDetector.GRID_SIZE; x++) {
-        // More musical octave distribution
-        const octave = Math.floor(y / 3); // 3 rows per octave for smoother progression
-        const noteIndex = x % scale.ratios.length;
-        
-        // Remove detuning for cleaner sound
-        const frequency = baseFrequency * 
-                         scale.ratios[noteIndex] * 
-                         Math.pow(2, octave);
-        
-        this.frequencies.push({ 
-            x, 
-            y: HandDetector.GRID_SIZE - 1 - y, 
-            frequency 
-        });
-      }
+    for (let y = 0; y < gridSize; y++) {
+        for (let x = 0; x < gridSize; x++) {
+            const octave = Math.floor(y / 3);
+            // Flip x coordinate by subtracting from gridSize - 1
+            const noteIndex = (gridSize - 1 - x) % scale.ratios.length;
+            
+            const frequency = baseFrequency * 
+                            scale.ratios[noteIndex] * 
+                            Math.pow(2, octave);
+            
+            this.frequencies.push({ 
+                x, 
+                y: gridSize - 1 - y, 
+                frequency 
+            });
+        }
     }
-  }
+}
 
   changeScale(scaleName) {
     if (AudioEngine.SCALES[scaleName]) {
