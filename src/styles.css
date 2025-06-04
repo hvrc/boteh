@@ -65,19 +65,29 @@ body {
 }
 
 .slider-container {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 200px;
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: 10px;
+  overflow: visible; /* Changed from hidden to show text */
+  user-select: none;
+  flex: 0 0 auto;
+  box-sizing: border-box;
 }
 
-#bpmSlider {
-  width: 200px;
-  height: 4px;
-}
-
-#bpmValue {
-  min-width: 50px;
+.slider-container label {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  color: #000;
+  font-size: 18px;
+  text-transform: lowercase;
+  font-family: monospace;
+  z-index: 2;
+  pointer-events: none;
+  user-select: none;
 }
 
 .control-container {
@@ -96,9 +106,11 @@ body {
 .slider-group {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
-  padding: 10px;
-  margin-top: 10px;
+  padding: 20px;
+  width: min(960px, 100vw);
+  margin: 0 auto;
 }
 
 /* Toggle switch styling */
@@ -147,29 +159,65 @@ input:checked + .toggle-slider:before {
 }
 
 /* Value display for sliders */
-.value-display {
-  min-width: 100px;
-  text-align: left;
-  margin-left: 10px;
+.value-display, 
+.slider-container span {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: #000;
+    font-size: 16px;
+    font-family: monospace;
+    z-index: 2;
+    pointer-events: none;
+    user-select: none;
 }
 
-/* Make all sliders consistent */
+/* Update range input styling */
 input[type="range"] {
-  -webkit-appearance: none;
-  width: 200px;
-  height: 4px;
-  background: #ccc;
-  border-radius: 2px;
-  outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 80px;
+    height: 80px;
+    background: #fff;
+    outline: none;
+    margin: 0;
+    cursor: pointer;
+    position: relative;
+    border: 1px solid #000;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 80px;
+  background: linear-gradient(to right, #2ecc71 var(--value-percent, 0%), #fff var(--value-percent, 0%));
+  border: none;
+}
+
+input[type="range"]::-moz-range-track {
+  width: 100%;
+  height: 80px;
+  background: linear-gradient(to right, #2ecc71 var(--value-percent, 0%), #fff var(--value-percent, 0%));
+  border: none;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  background: #2196F3;
-  border-radius: 50%;
-  cursor: pointer;
+  appearance: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 0;
+  height: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .container canvas {
@@ -178,4 +226,74 @@ input[type="range"]::-webkit-slider-thumb {
 
 #webcam.hidden {
   display: none;
+}
+
+/* Update button styling */
+.button-container {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 10px;
+    user-select: none;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+}
+
+.toggle-button {
+    width: 100%;
+    height: 100%;
+    border: 1px solid #000;
+    background: #fff;
+    padding: 0;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+}
+
+/* Add disabled state styling */
+.controls.disabled .button-container:not(.master-control) .toggle-button {
+    opacity: 0.5;
+    pointer-events: none;
+    cursor: default;
+}
+
+/* Ensure master switch is always clickable */
+.master-control .toggle-button {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+.toggle-button[data-state="on"] {
+    background: #2ecc71;
+}
+
+/* Add specific styling for the power button */
+.master-control .toggle-button {
+    border: 1px solid #000;
+}
+
+.button-container label {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: #000;
+    font-size: 18px;
+    text-transform: lowercase;
+    font-family: monospace;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.button-container .value-display {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: #000;
+    font-size: 16px;
+    font-family: monospace;
+    pointer-events: none;
 }

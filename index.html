@@ -13,153 +13,157 @@
   <div class="controls">
     <div class="slider-group">
       <!-- Add master switch as first control -->
-      <div class="slider-container master-control">
-        <label for="masterSwitch">Power:</label>
-        <input type="range" id="masterSwitch" min="0" max="1" value="0" step="1">
-        <span class="value-display" id="masterSwitchValue">Off</span>
+      <div class="button-container master-control">
+        <label for="masterSwitch">power</label>
+        <button id="masterSwitch" class="toggle-button" data-state="off">
+          <span class="value-display" id="masterSwitchValue"></span>
+        </button>
       </div>
 
       <!-- Add grid size control after the master switch -->
       <div class="slider-container">
-        <label for="gridSizeSlider">Grid Size:</label>
+        <label for="gridSizeSlider">grid</label>
         <input type="range" id="gridSizeSlider" min="1" max="20" value="15" step="1">
         <span class="value-display" id="gridSizeValue">15</span>
       </div>
 
       <!-- Main Controls -->
       <div class="slider-container">
-        <label for="volumeSlider">Volume:</label>
+        <label for="volumeSlider">vol</label>
         <input type="range" id="volumeSlider" min="0" max="100" value="10">
         <span id="volumeValue">10%</span>
       </div>
 
       <div class="slider-container">
-        <label for="bpmSlider">BPM:</label>
+        <label for="bpmSlider">bpm</label>
         <input type="range" id="bpmSlider" min="20" max="300" value="222">
         <span id="bpmValue">222</span>
       </div>
 
       <div class="slider-container">
-        <label for="scaleSelect">Scale:</label>
+        <label for="scaleSelect">scale</label>
         <input type="range" id="scaleSelect" min="0" max="4" value="0" step="1">
-        <span class="value-display" id="scaleValue">Pentatonic</span>
+        <span class="value-display" id="scaleValue">pent</span>
       </div>
 
       <!-- Mode Controls -->
-      <div class="slider-container">
-        <label for="expandMode">Spread:</label>
-        <input type="range" id="expandMode" min="0" max="1" value="0" step="1">
-        <span class="value-display" id="expandModeValue">Off</span>
+      <div class="button-container">
+        <label for="expandMode">spread</label>
+        <button id="expandMode" class="toggle-button" data-state="off">
+          <span class="value-display" id="expandModeValue"></span>
+        </button>
       </div>
 
-      <div class="slider-container">
-        <label for="arpMode">Arpeggiator:</label>
-        <input type="range" id="arpMode" min="0" max="1" value="1" step="1">
-        <span class="value-display" id="arpModeValue">On</span>
+      <div class="button-container">
+        <label for="arpMode">arp</label>
+        <button id="arpMode" class="toggle-button" data-state="off">
+          <span class="value-display" id="arpModeValue"></span>
+        </button>
       </div>
 
-      <div class="slider-container">
-        <label for="holdMode">Sustain:</label>
-        <input type="range" id="holdMode" min="0" max="1" value="0" step="1">
-        <span class="value-display" id="holdModeValue">Off</span>
+      <div class="button-container">
+        <label for="holdMode">sus</label>
+        <button id="holdMode" class="toggle-button" data-state="off">
+          <span class="value-display" id="holdModeValue"></span>
+        </button>
       </div>
 
       <!-- Oscillator 1 Controls -->
       <div class="slider-container">
-        <label for="mainOscGainSlider">Osc 1 Gain:</label>
+        <label for="mainOscGainSlider">osc 1 vol</label>
         <input type="range" id="mainOscGainSlider" min="0" max="100" value="50">
         <span id="mainOscGainValue">50%</span>
       </div>
 
       <div class="slider-container">
-        <label for="mainOscType">Osc 1 Type:</label>
+        <label for="mainOscType">osc 1 shape</label>
         <input type="range" id="mainOscType" min="0" max="3" value="0" step="1">
         <span class="value-display" id="mainOscTypeValue">Sine</span>
       </div>
 
       <div class="slider-container">
-        <label for="mainOscOctave">Osc 1 Octave:</label>
+        <label for="mainOscOctave">osc 1 oct</label>
         <input type="range" id="mainOscOctave" min="-4" max="4" value="0">
         <span id="mainOscOctaveValue">0</span>
       </div>
 
       <!-- Oscillator 2 Controls -->
       <div class="slider-container">
-        <label for="subOscGainSlider">Osc 2 Gain:</label>
+        <label for="subOscGainSlider">osc 2 vol</label>
         <input type="range" id="subOscGainSlider" min="0" max="100" value="20">
         <span id="subOscGainValue">20%</span>
       </div>
 
       <div class="slider-container">
-        <label for="subOscType">Osc 2 Type:</label>
+        <label for="subOscType">osc 2 shape</label>
         <input type="range" id="subOscType" min="0" max="3" value="0" step="1">
         <span class="value-display" id="subOscTypeValue">Sine</span>
       </div>
 
       <div class="slider-container">
-        <label for="subOscOctave">Osc 2 Octave:</label>
+        <label for="subOscOctave">osc 2 oct</label>
         <input type="range" id="subOscOctave" min="-4" max="4" value="-2">
         <span id="subOscOctaveValue">-2</span>
       </div>
 
       <!-- Envelope and Filter Controls -->
       <div class="slider-container">
-        <label for="attackSlider">Attack:</label>
+        <label for="attackSlider">attack</label>
         <input type="range" id="attackSlider" min="0" max="40" value="2">
         <span id="attackValue">0.002s</span>
       </div>
 
       <div class="slider-container">
-        <label for="filterCutoffSlider">Filter Cutoff:</label>
+        <label for="filterCutoffSlider">cutoff</label>
         <input type="range" id="filterCutoffSlider" min="20" max="20000" value="2000" step="1">
         <span id="filterCutoffValue">2000 Hz</span>
       </div>
 
       <div class="slider-container">
-        <label for="filterResonanceSlider">Filter Resonance:</label>
+        <label for="filterResonanceSlider">reso</label>
         <input type="range" id="filterResonanceSlider" min="0" max="20" value="0" step="0.1">
         <span id="filterResonanceValue">0</span>
       </div>
 
       <!-- Glide Controls -->
       <div class="slider-container">
-        <label for="glideSlider">Glide:</label>
+        <label for="glideSlider">glide</label>
         <input type="range" id="glideSlider" min="0" max="500" value="0">
         <span id="glideValue">0ms</span>
       </div>
 
-      <div class="slider-container">
+      <!-- <div class="slider-container">
         <label for="glideModeSlider">Glide Mode:</label>
         <input type="range" id="glideModeSlider" min="0" max="1" value="0" step="1">
         <span id="glideModeValue">Glissando</span>
-      </div>
+      </div> -->
 
       <!-- Global Effects -->
       <div class="slider-container">
-        <label for="pitchSlider">Pitch Shift:</label>
+        <label for="pitchSlider">pitch</label>
         <input type="range" id="pitchSlider" min="-12" max="12" value="0" step="1">
         <span id="pitchValue">0 st</span>
       </div>
 
       <div class="slider-container">
-        <label for="delaySlider">Delay:</label>
+        <label for="delaySlider">delay</label>
         <input type="range" id="delaySlider" min="0" max="100" value="30">
         <span id="delayValue">30%</span>
       </div>
 
       <div class="slider-container">
-        <label for="delayFeedbackSlider">Delay Feedback:</label>
+        <label for="delayFeedbackSlider">feed</label>
         <input type="range" id="delayFeedbackSlider" min="0" max="90" value="75">
         <span id="delayFeedbackValue">75%</span>
       </div>
 
       <div class="slider-container">
-        <label for="reverbSlider">Reverb Mix:</label>
+        <label for="reverbSlider">reverb</label>
         <input type="range" id="reverbSlider" min="0" max="100" value="30">
         <span id="reverbValue">30%</span>
       </div>
     </div>
-  </div>
-  <script type="module" src="/src/main.js"></script>
+  </div>  <script type="module" src="/src/main.js"></script>
+  <script src="/src/slider.js"></script>
 </body>
 </html>

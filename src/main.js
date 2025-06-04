@@ -34,8 +34,8 @@ const UI = {
     subOscGainValue: document.getElementById('subOscGainValue'),
     glideSlider: document.getElementById('glideSlider'),
     glideValue: document.getElementById('glideValue'),
-    glideModeSlider: document.getElementById('glideModeSlider'),
-    glideModeValue: document.getElementById('glideModeValue'),
+    // glideModeSlider: document.getElementById('glideModeSlider'),
+    // glideModeValue: document.getElementById('glideModeValue'),
     
     // Dropdowns and sliders
     mainOscType: document.getElementById('mainOscType'),
@@ -53,8 +53,8 @@ const UI = {
     subOscOctaveValue: document.getElementById('subOscOctaveValue'),
     glideSlider: document.getElementById('glideSlider'),
     glideValue: document.getElementById('glideValue'),
-    glideModeSlider: document.getElementById('glideModeSlider'),
-    glideModeValue: document.getElementById('glideModeValue'),
+    // glideModeSlider: document.getElementById('glideModeSlider'),
+    // glideModeValue: document.getElementById('glideModeValue'),
     scaleValue: document.getElementById('scaleValue'),
     mainOscTypeValue: document.getElementById('mainOscTypeValue'),
     subOscTypeValue: document.getElementById('subOscTypeValue'),
@@ -239,7 +239,7 @@ function handleGlideChange(value) {
     
     // Enable/disable glide mode slider based on glide value
     const isEnabled = parseInt(value) > 0;
-    UI.glideModeSlider.disabled = !isEnabled;
+    // UI.glideModeSlider.disabled = !isEnabled;
     
     if (audioEngine) {
         audioEngine.setGlideTime(glideTime);
@@ -255,13 +255,13 @@ function handleGlideChange(value) {
     }
 }
 
-function handleGlideModeChange(value) {
-    const isPortamento = parseInt(value) === 1;
-    UI.glideModeValue.textContent = isPortamento ? 'Portamento' : 'Glissando';
-    if (audioEngine) {
-        audioEngine.setPortamentoMode(isPortamento);
-    }
-}
+// function handleGlideModeChange(value) {
+//     const isPortamento = parseInt(value) === 1;
+//     UI.glideModeValue.textContent = isPortamento ? 'Portamento' : 'Glissando';
+//     if (audioEngine) {
+//         audioEngine.setPortamentoMode(isPortamento);
+//     }
+// }
 
 function handleMainOscOctaveChange(value) {
     const octave = parseInt(value);
@@ -282,9 +282,10 @@ function handleSubOscOctaveChange(value) {
 function handleExpandModeChange(value) {
     const isEnabled = parseInt(value) === 1;
     UI.expandModeValue.textContent = isEnabled ? 'On' : 'Off';
+    UI.expandMode.dataset.state = isEnabled ? 'on' : 'off';
+    
     if (handDetector) {
         if (!isEnabled) {
-            // Only clear spread cells when turning off spread mode
             handDetector.expandedCells.clear();
             
             // Stop any notes that were playing from spread cells
@@ -323,8 +324,9 @@ function handleHoldModeChange(value) {
     const isEnabled = parseInt(value) === 1;
     // Update display text to say "Sustain" instead of "Hold"
     UI.holdModeValue.textContent = isEnabled ? 'On' : 'Off';
+    UI.holdMode.dataset.state = isEnabled ? 'on' : 'off';
     
-    if (isEnabled) {
+    if (isEnabled && handDetector) {
         // When enabling sustain mode, store current active cells
         const activeCells = handDetector.getActiveCells();
         heldNotes = [...activeCells]; // Store a copy of currently active cells
@@ -365,6 +367,7 @@ function handleHoldModeChange(value) {
 function handleArpModeChange(value) {
     const isArpMode = parseInt(value) === 1;
     UI.arpModeValue.textContent = isArpMode ? 'On' : 'Off';
+    UI.arpMode.dataset.state = isArpMode ? 'on' : 'off';
     
     if (audioEngine) {
         // Stop any currently playing notes when switching modes
@@ -435,20 +438,28 @@ async function initializeApp() {
         UI.delaySlider.value = audioEngine.delayAmount * 100;
         UI.delayValue.textContent = `${UI.delaySlider.value}%`;
         
-        // Initialize mode controls with sliders
-        UI.expandMode.value = 0;
+        // Initialize mode controls with proper visual states
+        UI.expandMode.dataset.state = 'off';
+        UI.expandMode.value = "0";
         UI.expandModeValue.textContent = 'Off';
         
-        UI.holdMode.value = 0;
-        UI.holdModeValue.textContent = 'Off';
+        UI.arpMode.dataset.state = 'on';  // Change to 'on'
+        UI.arpMode.value = "1";  // Change to "1"
+        UI.arpModeValue.textContent = 'On'; // Change to 'On'
         
+        UI.holdMode.dataset.state = 'off';
+        UI.holdMode.value = "0";
+        UI.holdModeValue.textContent = 'Off';
+
         // Initialize scale selector with pentatonic (index 0)
         UI.scaleSelect.value = "0"; // Force to pentatonic
         handleScaleChange("0");  // Update display and audio engine
 
         // Initialize mode controls
-        UI.arpMode.value = "1";
-        UI.arpModeValue.textContent = 'On';
+        UI.arpMode.value = "1";  // Change to "1"
+        UI.arpMode.dataset.state = 'on';  // Change to 'on'
+        UI.arpModeValue.textContent = 'On'; // Change to 'On'
+        
         UI.expandMode.value = "0";
         UI.expandModeValue.textContent = 'Off';
         UI.holdMode.value = "0";
@@ -463,9 +474,9 @@ async function initializeApp() {
         // Initialize glide controls
         UI.glideSlider.value = 0;
         UI.glideValue.textContent = '0ms';
-        UI.glideModeSlider.value = 0;
-        UI.glideModeValue.textContent = 'Glissando';
-        UI.glideModeSlider.disabled = true;
+        // UI.glideModeSlider.value = 0;
+        // UI.glideModeValue.textContent = 'Glissando';
+        // UI.glideModeSlider.disabled = true;
 
         // Initialize pitch slider
         UI.pitchSlider.value = 0;
@@ -524,22 +535,22 @@ async function initializeApp() {
         UI.holdMode.addEventListener('input', e => handleHoldModeChange(e.target.value));
 
         // Initialize glide mode control
-        UI.glideModeSlider.addEventListener('input', e => handleGlideModeChange(e.target.value));
+        // UI.glideModeSlider.addEventListener('input', e => handleGlideModeChange(e.target.value));
 
         // Initialize display values
         handleScaleChange(UI.scaleSelect.value);
         handleMainOscTypeChange(UI.mainOscType.value);
         handleSubOscTypeChange(UI.subOscType.value);
-        handleGlideModeChange(UI.glideModeSlider.value);
+        // handleGlideModeChange(UI.glideModeSlider.value);
 
         // Enable/disable glide mode slider when glide value changes
-        UI.glideSlider.addEventListener('input', e => {
-            const isEnabled = parseInt(e.target.value) > 0;
-            UI.glideModeSlider.disabled = !isEnabled;
-            if (isEnabled && UI.glideModeSlider.value === "0") {
-                handleGlideModeChange(0);
-            }
-        });
+        // UI.glideSlider.addEventListener('input', e => {
+        //     const isEnabled = parseInt(e.target.value) > 0;
+        //     UI.glideModeSlider.disabled = !isEnabled;
+        //     if (isEnabled && UI.glideModeSlider.value === "0") {
+        //         handleGlideModeChange(0);
+        //     }
+        // });
 
         // Initialize filter sliders
         UI.filterCutoffSlider.addEventListener('input', (e) => handleFilterCutoffChange(e.target.value));
@@ -682,8 +693,62 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set initial UI state
     UI.controls.classList.add('disabled');
     
-    // Add master switch listener
-    UI.masterSwitch.addEventListener('input', handleMasterSwitch);
+    // Set initial button states
+    UI.masterSwitch.dataset.state = 'off';
+    UI.masterSwitchValue.textContent = 'Off';
+    
+    UI.expandMode.dataset.state = 'off';
+    UI.expandModeValue.textContent = 'Off';
+    
+    UI.arpMode.dataset.state = 'on';  // Change to 'on'
+    UI.arpModeValue.textContent = 'On'; // Change to 'On'
+    UI.arpMode.value = "1";  // Change to "1"
+    
+    UI.holdMode.dataset.state = 'off';
+    UI.holdModeValue.textContent = 'Off';
+
+    // Add click handler for master switch
+    UI.masterSwitch.addEventListener('click', (e) => {
+        const button = e.currentTarget;
+        const newState = button.dataset.state === 'on' ? 'off' : 'on';
+        button.dataset.state = newState;
+        UI.masterSwitchValue.textContent = newState === 'on' ? 'On' : 'Off';
+        
+        if (newState === 'on') {
+            initializeApp();
+        } else {
+            shutdownSystem();
+        }
+    });
+
+    // Remove the old event listeners for mode buttons
+    // And add new ones that check power state first
+    UI.expandMode.addEventListener('click', (e) => {
+        if (UI.masterSwitch.dataset.state !== 'on') return;
+        const button = e.currentTarget;
+        const newState = button.dataset.state === 'on' ? 'off' : 'on';
+        button.dataset.state = newState;
+        UI.expandMode.value = newState === 'on' ? '1' : '0';
+        handleExpandModeChange(newState === 'on' ? '1' : '0');
+    });
+
+    UI.arpMode.addEventListener('click', (e) => {
+        if (UI.masterSwitch.dataset.state !== 'on') return;
+        const button = e.currentTarget;
+        const newState = button.dataset.state === 'on' ? 'off' : 'on';
+        button.dataset.state = newState;
+        UI.arpMode.value = newState === 'on' ? '1' : '0';
+        handleArpModeChange(newState === 'on' ? '1' : '0');
+    });
+
+    UI.holdMode.addEventListener('click', (e) => {
+        if (UI.masterSwitch.dataset.state !== 'on') return;
+        const button = e.currentTarget;
+        const newState = button.dataset.state === 'on' ? 'off' : 'on';
+        button.dataset.state = newState;
+        UI.holdMode.value = newState === 'on' ? '1' : '0';
+        handleHoldModeChange(newState === 'on' ? '1' : '0');
+    });
 });
 
 function handlePitchChange(value) {
@@ -714,14 +779,14 @@ function handleFilterResonanceChange(value) {
     }
 }
 
-function shutdownSystem() {
+async function shutdownSystem() {
     try {
         // Stop audio first
         if (audioEngine) {
             audioEngine.stopArpeggio();
             // Stop all currently playing notes
             if (heldNotes) {
-                heldNotes.forEach(cell => {
+                heldNotes?.forEach(cell => {
                     audioEngine.stopNote(cell.x, cell.y);
                 });
             }
@@ -733,29 +798,17 @@ function shutdownSystem() {
             audioEngine = null;
         }
 
-        // Stop camera and hand detection with proper cleanup
+        // Stop camera and hand detection
         if (handDetector) {
-            // Add a small delay to ensure audio is cleaned up first
-            setTimeout(() => {
-                handDetector.stop();
-                handDetector = null;
-            }, 100);
+            await handDetector.stop();
+            handDetector = null;
         }
         
         // Hide video immediately
         UI.video.classList.add('hidden');
         
-        // Disable controls
+        // Disable controls and reset UI
         UI.controls.classList.add('disabled');
-        
-        // Disable all sliders except master switch
-        Object.entries(UI).forEach(([key, element]) => {
-            if (element && 
-                element !== UI.masterSwitch && 
-                element.tagName === 'INPUT') {
-                element.disabled = true;
-            }
-        });
         
         // Clear canvas but keep grid
         const ctx = UI.canvas.getContext('2d');
@@ -818,4 +871,33 @@ function handleGridSizeChange(value) {
     const ctx = UI.canvas.getContext('2d');
     ctx.clearRect(0, 0, UI.canvas.width, UI.canvas.height);
     drawGrid(ctx, CANVAS_SIZE, CANVAS_SIZE, size, []);
+}
+
+// New click handlers
+function handleMasterSwitchClick(e) {
+    const button = e.currentTarget;
+    const newState = button.dataset.state === 'on' ? 'off' : 'on';
+    button.dataset.state = newState;
+    handleMasterSwitch({ target: { value: newState === 'on' ? '1' : '0' }});
+}
+
+function handleExpandModeClick(e) {
+    const button = e.currentTarget;
+    const newState = button.dataset.state === 'on' ? 'off' : 'on';
+    button.dataset.state = newState;
+    handleExpandModeChange(newState === 'on' ? '1' : '0');
+}
+
+function handleArpModeClick(e) {
+    const button = e.currentTarget;
+    const newState = button.dataset.state === 'on' ? 'off' : 'on';
+    button.dataset.state = newState;
+    handleArpModeChange(newState === 'on' ? '1' : '0');
+}
+
+function handleHoldModeClick(e) {
+    const button = e.currentTarget;
+    const newState = button.dataset.state === 'on' ? 'off' : 'on';
+    button.dataset.state = newState;
+    handleHoldModeChange(newState === 'on' ? '1' : '0');
 }

@@ -45,18 +45,42 @@ export class HandDetector {
 
   async start(onResults) {
     try {
-      // Ensure hands is initialized
-      if (!this.hands) {
-        this.setupHandDetection();
+      // Ensure complete cleanup before starting
+      if (this.hands) {
+        await this.stop();
       }
+
+      // Reinitialize MediaPipe Hands
+      this.hands = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+      });
+
+      this.hands.setOptions({
+        maxNumHands: 2,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+
+      // Set up camera with proper initialization sequence
+      const size = Math.min(640, 480);
+      await this.hands.initialize();
       
       // Set callback first
       await this.hands.onResults(onResults);
       
-      // Then start camera
-      if (this.camera) {
-        await this.camera.start();
-      }
+      // Then initialize and start camera
+      this.camera = new Camera(this.videoElement, {
+        onFrame: async () => {
+          if (this.hands) {
+            await this.hands.send({ image: this.videoElement });
+          }
+        },
+        width: size,
+        height: size
+      });
+
+      await this.camera.start();
     } catch (error) {
       console.error('Error starting HandDetector:', error);
       throw error;
@@ -65,34 +89,41 @@ export class HandDetector {
 
   stop() {
     try {
-        // Stop camera first
+        // First, stop the camera feed
         if (this.camera) {
             this.camera.stop();
-            this.camera = null;
         }
         
-        // Remove callback before closing hands
+        // Remove callback and wait for camera to fully stop
         if (this.hands) {
-            this.hands.onResults(null);
-            // Add small delay before closing hands
-            setTimeout(() => {
-                try {
-                    this.hands.close();
-                } catch (e) {
-                    // Ignore errors during cleanup
-                }
-                this.hands = null;
-            }, 100);
+            this.hands.onResults(() => {}); // Set empty callback
         }
-
+        
         // Clear states
         this.activeCells.clear();
         this.expandedCells.clear();
         this.fingerStates.clear();
         this.fingerDirections.clear();
-        
+
+        // Clean up MediaPipe resources
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                if (this.hands) {
+                    try {
+                        this.hands.close();
+                    } catch (e) {
+                        console.warn('Error closing hands:', e);
+                    }
+                }
+                this.hands = null;
+                this.camera = null;
+                resolve();
+            }, 300); // Give more time for cleanup
+        });
     } catch (error) {
-        console.warn('Non-critical error during HandDetector cleanup:', error);
+        console.warn('Error during HandDetector cleanup:', error);
+        this.hands = null;
+        this.camera = null;
     }
   }
 
