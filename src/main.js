@@ -189,7 +189,8 @@ function handleSubOscGainChange(value) {
 }
 
 function handleScaleChange(value) {
-    const scaleName = SCALES[value];
+    const index = parseInt(value);
+    const scaleName = SCALES[index];
     UI.scaleValue.textContent = scaleName.charAt(0).toUpperCase() + scaleName.slice(1);
     if (audioEngine) {
         audioEngine.changeScale(scaleName);
@@ -416,9 +417,10 @@ async function initializeApp() {
         UI.holdMode.value = 0;
         UI.holdModeValue.textContent = 'Off';
         
-        // Initialize scale selector with current scale
-        UI.scaleSelect.value = audioEngine.currentScale;
-        
+        // Initialize scale selector with pentatonic (index 0)
+        UI.scaleSelect.value = "0"; // Force to pentatonic
+        handleScaleChange("0");  // Update display and audio engine
+
         // Initialize mode controls
         UI.arpMode.value = "1";
         UI.arpModeValue.textContent = 'On';
