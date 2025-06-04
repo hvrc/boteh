@@ -208,7 +208,8 @@ export class HandDetector {
         state.currentGreen = this.smoothTransition(state.currentGreen, 255 * state.normalizedDistance);
         state.currentAlpha = this.smoothTransition(state.currentAlpha, state.normalizedDistance);
 
-        // Draw finger dot
+        // Comment out circle drawing but keep for reference
+        /*
         this.canvasContext.beginPath();
         this.canvasContext.arc(
             tipPosition.x * this.canvasElement.width, 
@@ -220,6 +221,7 @@ export class HandDetector {
 
         this.canvasContext.fillStyle = `rgba(${state.currentRed}, ${state.currentGreen}, 0, ${state.currentAlpha})`;
         this.canvasContext.fill();
+        */
 
         // Activate cell if finger is green enough
         if (state.currentGreen > 200 && state.currentAlpha > 0.8) {

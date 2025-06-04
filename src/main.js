@@ -1,5 +1,6 @@
 import { HandDetector } from './fingers.js';
 import { AudioEngine } from './audio.js';
+import { drawGrid, clearOpacities } from './grid.js';
 
 // Constants
 const CANVAS_SIZE = Math.min(640, 480);
@@ -79,45 +80,7 @@ let lastActiveCells = new Set();
 let audioEngine = null;
 let handDetector = null;
 let heldNotes = null;
-
-function drawGrid(ctx, width, height, gridSize, activeCells) {
-  const cellWidth = width / gridSize;
-  const cellHeight = height / gridSize;
-  
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-  ctx.lineWidth = 1;
-
-  // Draw vertical and horizontal lines first
-  for (let x = 0; x <= width; x += cellWidth) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, height);
-    ctx.stroke();
-  }
-
-  for (let y = 0; y <= height; y += cellHeight) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(width, y);
-    ctx.stroke();
-  }
-
-  // Highlight active cells
-  activeCells.forEach(cell => {
-    // Check if this cell is an expanded cell
-    const isExpanded = handDetector && handDetector.expandedCells.has(`${cell.x},${cell.y}`);
-    ctx.fillStyle = isExpanded ? 
-      'rgba(135, 206, 235, 0.3)' : // Light blue for expanded cells
-      'rgba(0, 0, 255, 0.3)';      // Regular blue for normal cells
-    
-    ctx.fillRect(
-      cell.x * cellWidth,
-      cell.y * cellHeight,
-      cellWidth,
-      cellHeight
-    );
-  });
-}
+const cellOpacities = new Map(); // Add this line
 
 function handleBPMChange(value) {
     UI.bpmValue.textContent = value;
@@ -637,7 +600,7 @@ async function initializeApp() {
                 cellsToDraw = activeCells;
             }
 
-            drawGrid(canvasCtx, CANVAS_SIZE, CANVAS_SIZE, HandDetector.GRID_SIZE, cellsToDraw);
+            drawGrid(canvasCtx, CANVAS_SIZE, CANVAS_SIZE, HandDetector.GRID_SIZE, cellsToDraw, handDetector);
             
             // Only update sequence if not in hold mode
             if (UI.holdMode.value === "0") {
@@ -707,9 +670,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize canvas size
     UI.canvas.width = UI.canvas.height = CANVAS_SIZE;
     
-    // Draw empty grid
+    // Draw initial state with instruction text
     const ctx = UI.canvas.getContext('2d');
-    drawGrid(ctx, CANVAS_SIZE, CANVAS_SIZE, HandDetector.GRID_SIZE, []);
+    drawInitialState(ctx);
     
     // Set initial UI state
     UI.controls.classList.add('disabled');
@@ -831,10 +794,10 @@ async function shutdownSystem() {
         // Disable controls and reset UI
         UI.controls.classList.add('disabled');
         
-        // Clear canvas but keep grid
+        // Clear canvas and redraw initial state
         const ctx = UI.canvas.getContext('2d');
-        ctx.clearRect(0, 0, UI.canvas.width, UI.canvas.height);
-        drawGrid(ctx, CANVAS_SIZE, CANVAS_SIZE, HandDetector.GRID_SIZE, []);
+        clearOpacities();
+        drawInitialState(ctx);
         
         // Reset state
         lastActiveCells = new Set();
@@ -844,15 +807,29 @@ async function shutdownSystem() {
     }
 }
 
-function handleMasterSwitch(e) {
-    const isOn = parseInt(e.target.value) === 1;
-    UI.masterSwitchValue.textContent = isOn ? 'On' : 'Off';
+function drawInitialState(ctx) {
+    // Clear canvas and set white background
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     
-    if (isOn) {
-        initializeApp();
-    } else {
-        shutdownSystem();
-    }
+    // Set up text style
+    ctx.fillStyle = '#888';
+    ctx.font = '16px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // Draw multiline text
+    const text = ['turn power on', 'and wave your', 'fingers around'];
+    const lineHeight = 30;
+    const startY = (CANVAS_SIZE / 2) - ((text.length - 1) * lineHeight / 2);
+    
+    text.forEach((line, i) => {
+        ctx.fillText(
+            line, 
+            CANVAS_SIZE / 2, 
+            startY + (i * lineHeight)
+        );
+    });
 }
 
 // Add this function with the other handlers
