@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Boteh</title>
+  <link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+  <div class="container">
+    <video id="webcam" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
+    <button id="startButton">Start Musical Interface</button>
+  </div>
+  <div class="controls hidden">
+    <div class="slider-group">
+      <!-- Main Controls -->
+      <div class="slider-container">
+        <label for="volumeSlider">Volume:</label>
+        <input type="range" id="volumeSlider" min="0" max="100" value="10">
+        <span id="volumeValue">10%</span>
+      </div>
+
+      <div class="slider-container">
+        <label for="bpmSlider">BPM:</label>
+        <input type="range" id="bpmSlider" min="20" max="300" value="222">
+        <span id="bpmValue">222</span>
+      </div>
+
+      <div class="slider-container">
+        <label for="scaleSelect">Scale:</label>
+        <input type="range" id="scaleSelect" min="0" max="4" value="0" step="1">
+        <span class="value-display" id="scaleValue">Pentatonic</span>
+      </div>
+
+      <!-- Mode Controls -->
+      <div class="slider-container">
+        <label for="expandMode">Expand Mode:</label>
+        <input type="range" id="expandMode" min="0" max="1" value="0" step="1">
+        <span class="value-display" id="expandModeValue">Off</span>
+      </div>
+
+      <div class="slider-container">
+        <label for="arpMode">Arpeggiator:</label>
+        <input type="range" id="arpMode" min="0" max="1" value="1" step="1">
+        <span class="value-display" id="arpModeValue">On</span>
+      </div>
+
+      <div class="slider-container">
+        <label for="holdMode">Hold Mode:</label>
+        <input type="range" id="holdMode" min="0" max="1" value="0" step="1">
+        <span class="value-display" id="holdModeValue">Off</span>
+      </div>
+
+      <!-- Oscillator 1 Controls -->
+      <div class="slider-container">
+        <label for="mainOscGainSlider">Osc 1 Gain:</label>
+        <input type="range" id="mainOscGainSlider" min="0" max="100" value="50">
+        <span id="mainOscGainValue">50%</span>
+      </div>
+
+      <div class="slider-container">
+        <label for="mainOscType">Osc 1 Type:</label>
+        <input type="range" id="mainOscType" min="0" max="3" value="0" step="1">
+        <span class="value-display" id="mainOscTypeValue">Sine</span>
+      </div>
+
+      <div class="slider-container">
+        <label for="mainOscOctave">Osc 1 Octave:</label>
+        <input type="range" id="mainOscOctave" min="-4" max="4" value="0">
+        <span id="mainOscOctaveValue">0</span>
+      </div>
+
+      <!-- Oscillator 2 Controls -->
+      <div class="slider-container">
+        <label for="subOscGainSlider">Osc 2 Gain:</label>
+        <input type="range" id="subOscGainSlider" min="0" max="100" value="20">
+        <span id="subOscGainValue">20%</span>
+      </div>
+
+      <div class="slider-container">
+        <label for="subOscType">Osc 2 Type:</label>
+        <input type="range" id="subOscType" min="0" max="3" value="0" step="1">
+        <span class="value-display" id="subOscTypeValue">Sine</span>
+      </div>
+
+      <div class="slider-container">
+        <label for="subOscOctave">Osc 2 Octave:</label>
+        <input type="range" id="subOscOctave" min="-4" max="4" value="-2">
+        <span id="subOscOctaveValue">-2</span>
+      </div>
+
+      <!-- Envelope and Filter Controls -->
+      <div class="slider-container">
+        <label for="attackSlider">Attack:</label>
+        <input type="range" id="attackSlider" min="0" max="40" value="2">
+        <span id="attackValue">0.002s</span>
+      </div>
+
+      <div class="slider-container">
+        <label for="filterCutoffSlider">Filter Cutoff:</label>
+        <input type="range" id="filterCutoffSlider" min="20" max="20000" value="2000" step="1">
+        <span id="filterCutoffValue">2000 Hz</span>
+      </div>
+
+      <div class="slider-container">
+        <label for="filterResonanceSlider">Filter Resonance:</label>
+        <input type="range" id="filterResonanceSlider" min="0" max="20" value="0" step="0.1">
+        <span id="filterResonanceValue">0</span>
+      </div>
+
+      <!-- Glide Controls -->
+      <div class="slider-container">
+        <label for="glideSlider">Glide:</label>
+        <input type="range" id="glideSlider" min="0" max="500" value="0">
+        <span id="glideValue">0ms</span>
+      </div>
+
+      <div class="slider-container">
+        <label for="glideModeSlider">Glide Mode:</label>
+        <input type="range" id="glideModeSlider" min="0" max="1" value="0" step="1">
+        <span id="glideModeValue">Glissando</span>
+      </div>
+
+      <!-- Global Effects -->
+      <div class="slider-container">
+        <label for="pitchSlider">Pitch Shift:</label>
+        <input type="range" id="pitchSlider" min="-12" max="12" value="0" step="1">
+        <span id="pitchValue">0 st</span>
+      </div>
+
+      <div class="slider-container">
+        <label for="delaySlider">Delay:</label>
+        <input type="range" id="delaySlider" min="0" max="100" value="30">
+        <span id="delayValue">30%</span>
+      </div>
+
+      <div class="slider-container">
+        <label for="delayFeedbackSlider">Delay Feedback:</label>
+        <input type="range" id="delayFeedbackSlider" min="0" max="100" value="40">
+        <span id="delayFeedbackValue">40%</span>
+      </div>
+
+      <div class="slider-container">
+        <label for="reverbSlider">Reverb Mix:</label>
+        <input type="range" id="reverbSlider" min="0" max="100" value="30">
+        <span id="reverbValue">30%</span>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
