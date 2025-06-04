@@ -63,6 +63,8 @@ const UI = {
     filterCutoffValue: document.getElementById('filterCutoffValue'),
     filterResonanceSlider: document.getElementById('filterResonanceSlider'),
     filterResonanceValue: document.getElementById('filterResonanceValue'),
+    delayFeedbackSlider: document.getElementById('delayFeedbackSlider'),
+    delayFeedbackValue: document.getElementById('delayFeedbackValue'),
 };
 
 // State
@@ -128,7 +130,12 @@ function handleDelayChange(value) {
     }
 }
 
-// (removed duplicate UI declaration)
+function handleDelayFeedbackChange(value) {
+    UI.delayFeedbackValue.textContent = `${value}%`;
+    if (audioEngine) {
+        audioEngine.setDelayFeedback(value);
+    }
+}
 
 // Add these handler functions
 function handleVolumeChange(value) {
@@ -460,6 +467,8 @@ async function initializeApp() {
         // Add delay slider event listeners
         UI.delaySlider.addEventListener('input', (e) => handleDelayChange(e.target.value));
         UI.delaySlider.addEventListener('change', (e) => handleDelayChange(e.target.value));
+
+        UI.delayFeedbackSlider.addEventListener('input', (e) => handleDelayFeedbackChange(e.target.value));
         
         UI.expandMode.addEventListener('input', (e) => handleExpandModeChange(e.target.value));
 

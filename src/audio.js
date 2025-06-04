@@ -102,10 +102,12 @@ export class AudioEngine {
     this.rightGain = this.audioContext.createGain();
     this.feedbackGainLeft = this.audioContext.createGain();
     this.feedbackGainRight = this.audioContext.createGain();
-    this.feedbackGainLeft.gain.value = 0.75; // Changed from 0.4
-    this.feedbackGainRight.gain.value = 0.75; // Changed from 0.4
+    this.feedbackGainLeft = this.audioContext.createGain();
+    this.feedbackGainRight = this.audioContext.createGain();
 
     // Set initial delay times and gains
+    this.feedbackGainLeft.gain.value = 0.75;
+    this.feedbackGainRight.gain.value = 0.75;
     this.leftDelay.delayTime.value = 0.3;
     this.rightDelay.delayTime.value = 0.4;
     this.leftGain.gain.value = 0.3; // 30% delay mix
