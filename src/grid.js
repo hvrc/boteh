@@ -5,13 +5,16 @@ const FADE_IN_SPEED = 0.05;   // Fast fade in
 const FADE_OUT_SPEED = 0.05; // Slow fade out
 const TARGET_OPACITY = 0.5;   // Maximum opacity for active circles
 
-export function drawGrid(ctx, width, height, gridSize, activeCells, handDetector = null) {
+export function drawGrid(ctx, width, height, gridSize, activeCells, handDetector = null, audioEngine = null) {
     const cellWidth = width / gridSize;
     const cellHeight = height / gridSize;
     const now = performance.now();
     
     // Convert active cells to Set for faster lookup
     const activeCellSet = new Set(activeCells.map(cell => `${cell.x},${cell.y}`));
+    
+    // Get currently playing notes from audio engine
+    const playingNotes = audioEngine ? audioEngine.oscillators : new Map();
     
     // Update opacities for all cells
     for (const [key, state] of cellOpacities.entries()) {
@@ -54,11 +57,21 @@ export function drawGrid(ctx, width, height, gridSize, activeCells, handDetector
         if (state.opacity > 0) {
             const [x, y] = key.split(',').map(Number);
             const isExpanded = handDetector && handDetector.expandedCells.has(key);
+            const isPlaying = playingNotes.has(key);
             
-            // Convert hex to RGB for expanded and normal cells
-            ctx.fillStyle = isExpanded ? 
-                `rgba(218, 112, 214, ${state.opacity})` : // #953553 for expanded cells
-                `rgba(149, 53, 83, ${state.opacity})`; // #DA70D6 for normal cells
+            // Choose color based on state
+            let color;
+            if (isPlaying) {
+                color = isExpanded ? 
+                    `rgba(255, 165, 0, ${state.opacity})` : // Orange for playing expanded
+                    `rgba(255, 140, 0, ${state.opacity})`; // Darker orange for playing normal
+            } else {
+                color = isExpanded ? 
+                    `rgba(218, 112, 214, ${state.opacity})` : // Original expanded color
+                    `rgba(149, 53, 83, ${state.opacity})`; // Original normal color
+            }
+            
+            ctx.fillStyle = color;
             
             // Calculate circle center and radius
             const centerX = (x + 0.5) * cellWidth;

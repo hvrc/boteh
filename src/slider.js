@@ -14,9 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Initial update
         updateSliderFill(slider);
         
-        // Update on input
-        slider.addEventListener('input', () => {
-            updateSliderFill(slider);
+        // Update on input and change events
+        ['input', 'change'].forEach(eventType => {
+            slider.addEventListener(eventType, () => {
+                updateSliderFill(slider);
+            });
         });
     });
 });

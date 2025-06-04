@@ -727,25 +727,155 @@ setFilterResonance(resonance) {
     const fadeTime = 0.016; // About 1 frame at 60fps for smooth updates
     this.filter.Q.linearRampToValueAtTime(resonance, now + fadeTime);
 }
-
   updateHeldNotes() {
-        const currentlyHeld = Array.from(this.oscillators.keys()).map(key => {
+        const now = this.audioContext.currentTime;
+        const transitionTime = 0.016; // 60fps for smooth transition
+        
+        // Update all currently held notes
+        this.oscillators.forEach((sound, key) => {
             const [x, y] = key.split(',').map(Number);
-            return { x, y };
+            const noteData = this.frequencies.find(n => n.x === x && n.y === y);
+            if (!noteData) return;
+
+            // Calculate new frequencies with pitch shift
+            const pitchShiftMultiplier = Math.pow(2, this.pitchShift / 12);
+            const mainFreq = noteData.frequency * Math.pow(2, this.mainOscOctave) * pitchShiftMultiplier;
+            const subFreq = noteData.frequency * Math.pow(2, this.subOscOctave) * pitchShiftMultiplier;
+            
+            // Update oscillator types if they've changed
+            const [mainOsc, subOsc] = sound.oscillators;
+            if (mainOsc.type !== this.mainOscType) {
+                // Create a crossfade to avoid clicks
+                const tempOsc = this.audioContext.createOscillator();
+                const tempGain = this.audioContext.createGain();
+                tempOsc.type = this.mainOscType;
+                tempOsc.frequency.value = mainFreq;
+                tempOsc.connect(tempGain);
+                tempGain.connect(sound.noteGain);
+                
+                tempGain.gain.setValueAtTime(0, now);
+                sound.gainNodes[0].gain.setValueAtTime(this.mainOscGain, now);
+                tempGain.gain.linearRampToValueAtTime(this.mainOscGain, now + transitionTime);
+                sound.gainNodes[0].gain.linearRampToValueAtTime(0, now + transitionTime);
+                
+                tempOsc.start(now);
+                setTimeout(() => {
+                    mainOsc.stop();
+                    mainOsc.disconnect();
+                    sound.oscillators[0] = tempOsc;
+                    sound.gainNodes[0] = tempGain;
+                }, transitionTime * 1000);
+            }
+            
+            if (subOsc.type !== this.subOscType) {
+                // Create a crossfade for sub oscillator
+                const tempOsc = this.audioContext.createOscillator();
+                const tempGain = this.audioContext.createGain();
+                tempOsc.type = this.subOscType;
+                tempOsc.frequency.value = subFreq;
+                tempOsc.connect(tempGain);
+                tempGain.connect(sound.noteGain);
+                
+                tempGain.gain.setValueAtTime(0, now);
+                sound.gainNodes[1].gain.setValueAtTime(this.subOscGain, now);
+                tempGain.gain.linearRampToValueAtTime(this.subOscGain, now + transitionTime);
+                sound.gainNodes[1].gain.linearRampToValueAtTime(0, now + transitionTime);
+                
+                tempOsc.start(now);
+                setTimeout(() => {
+                    subOsc.stop();
+                    subOsc.disconnect();
+                    sound.oscillators[1] = tempOsc;
+                    sound.gainNodes[1] = tempGain;
+                }, transitionTime * 1000);
+            }
+            
+            // Smoothly update frequencies
+            if (mainOsc.frequency.value !== mainFreq) {
+                mainOsc.frequency.exponentialRampToValueAtTime(mainFreq, now + transitionTime);
+            }
+            if (subOsc.frequency.value !== subFreq) {
+                subOsc.frequency.exponentialRampToValueAtTime(subFreq, now + transitionTime);
+            }
+            
+            // Smoothly update gains
+            sound.gainNodes[0].gain.linearRampToValueAtTime(this.mainOscGain, now + transitionTime);
+            sound.gainNodes[1].gain.linearRampToValueAtTime(this.subOscGain, now + transitionTime);
         });
         
-        currentlyHeld.forEach(cell => {
-            this.stopNote(cell.x, cell.y);
-        });
-        
-        currentlyHeld.forEach(cell => {
-            this.playNote(cell.x, cell.y);
-        });
+        // Also update arpeggiator oscillators if they exist
+        if (this.arpOscillators) {
+            const activeNote = Array.from(this.activeNotes)[0];
+            if (activeNote) {
+                const [x, y] = activeNote.split(',').map(Number);
+                const noteData = this.frequencies.find(n => n.x === x && n.y === y);
+                if (noteData) {
+                    const pitchShiftMultiplier = Math.pow(2, this.pitchShift / 12);
+                    const mainFreq = noteData.frequency * Math.pow(2, this.mainOscOctave) * pitchShiftMultiplier;
+                    const subFreq = noteData.frequency * Math.pow(2, this.subOscOctave) * pitchShiftMultiplier;
+                    
+                    // Update oscillator types with crossfade if needed
+                    if (this.arpOscillators.mainOsc.type !== this.mainOscType) {
+                        const { mainOsc, mainGain } = this.createArpOscillator(mainFreq, this.mainOscType, this.mainOscGain);
+                        this.crossfadeArpOscillator('main', mainOsc, mainGain);
+                    }
+                    
+                    if (this.arpOscillators.subOsc.type !== this.subOscType) {
+                        const { subOsc, subGain } = this.createArpOscillator(subFreq, this.subOscType, this.subOscGain);
+                        this.crossfadeArpOscillator('sub', subOsc, subGain);
+                    }
+                    
+                    // Smoothly update frequencies and gains
+                    this.arpOscillators.mainOsc.frequency.exponentialRampToValueAtTime(mainFreq, now + transitionTime);
+                    this.arpOscillators.subOsc.frequency.exponentialRampToValueAtTime(subFreq, now + transitionTime);
+                    this.arpOscillators.mainGain.gain.linearRampToValueAtTime(this.mainOscGain, now + transitionTime);
+                    this.arpOscillators.subGain.gain.linearRampToValueAtTime(this.subOscGain, now + transitionTime);
+                }
+            }
+        }
     }
     
     setDelayFeedback(amount) {
         const feedback = Math.min(Math.max(amount / 100, 0), 0.9); // Limit feedback to 90% to prevent runaway
         this.feedbackGainLeft.gain.setValueAtTime(feedback, this.audioContext.currentTime);
         this.feedbackGainRight.gain.setValueAtTime(feedback, this.audioContext.currentTime);
+      }
+
+      createArpOscillator(freq, type, gain) {
+        const osc = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gainNode.gain.value = 0; // Start at 0 for crossfade
+        osc.connect(gainNode);
+        gainNode.connect(this.arpOscillators.noteGain);
+        osc.start(this.audioContext.currentTime);
+        return { osc, gainNode };
+      }
+
+      crossfadeArpOscillator(type, newOsc, newGain) {
+        const now = this.audioContext.currentTime;
+        const transitionTime = 0.016;
+        const oldOsc = type === 'main' ? this.arpOscillators.mainOsc : this.arpOscillators.subOsc;
+        const oldGain = type === 'main' ? this.arpOscillators.mainGain : this.arpOscillators.subGain;
+        
+        oldGain.gain.linearRampToValueAtTime(0, now + transitionTime);
+        newGain.gain.linearRampToValueAtTime(
+          type === 'main' ? this.mainOscGain : this.subOscGain, 
+          now + transitionTime
+        );
+        
+        setTimeout(() => {
+          oldOsc.stop();
+          oldOsc.disconnect();
+          oldGain.disconnect();
+          if (type === 'main') {
+            this.arpOscillators.mainOsc = newOsc;
+            this.arpOscillators.mainGain = newGain;
+          } else {
+            this.arpOscillators.subOsc = newOsc;
+            this.arpOscillators.subGain = newGain;
+          }
+        }, transitionTime * 1000);
       }
 }

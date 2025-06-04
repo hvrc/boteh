@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Boteh</title>
+  <link rel="icon" type="image/png" href="public/icon.png">
   <link rel="stylesheet" href="src/styles.css">
 </head>
 <body>
@@ -141,8 +142,14 @@
       <!-- Global Effects -->
       <div class="slider-container">
         <label for="pitchSlider">pitch</label>
-        <input type="range" id="pitchSlider" min="-12" max="12" value="0" step="1">
-        <span id="pitchValue">0 st</span>
+        <input type="range" 
+               id="pitchSlider" 
+               min="-1200" 
+               max="1200" 
+               value="0" 
+               step="10"
+        >
+        <span id="pitchValue">0 cents</span>
       </div>
 
       <div class="slider-container">
@@ -163,7 +170,7 @@
         <span id="reverbValue">30%</span>
       </div>
     </div>
-  </div>  <script type="module" src="/src/main.js"></script>
-  <script src="/src/slider.js"></script>
+  </div>  <script type="module" src="src/main.js"></script>
+  <script src="src/slider.js"></script>
 </body>
 </html>

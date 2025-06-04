@@ -1,0 +1,4 @@
+deploy
+
+gcloud config set project boteh-461905
+gcloud app deploy

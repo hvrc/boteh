@@ -600,7 +600,15 @@ async function initializeApp() {
                 cellsToDraw = activeCells;
             }
 
-            drawGrid(canvasCtx, CANVAS_SIZE, CANVAS_SIZE, HandDetector.GRID_SIZE, cellsToDraw, handDetector);
+            drawGrid(
+                canvasCtx, 
+                CANVAS_SIZE, 
+                CANVAS_SIZE, 
+                HandDetector.GRID_SIZE, 
+                cellsToDraw, 
+                handDetector,
+                audioEngine  // Add this parameter
+            );
             
             // Only update sequence if not in hold mode
             if (UI.holdMode.value === "0") {
@@ -736,8 +744,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function handlePitchChange(value) {
-    const semitones = parseInt(value);
-    UI.pitchValue.textContent = `${semitones} st`;
+    // Convert from cents to semitones (value/100)
+    const cents = parseInt(value);
+    const semitones = cents / 100;
+    
+    // Update display - show cents if less than a semitone
+    const displayText = Math.abs(cents) < 100 ? 
+        `${cents} cents` : 
+        `${semitones.toFixed(2)} st`;
+    
+    UI.pitchValue.textContent = displayText;
+    
     if (audioEngine) {
         audioEngine.setPitchShift(semitones);
     }
