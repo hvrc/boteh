@@ -1,23 +1,18 @@
 {
   "name": "boteh",
-  "private": true,
   "version": "1.0.0",
-  "type": "module",
+  "main": "app.js",
+  "type": "commonjs",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "start": "vite preview --host 0.0.0.0 --port $PORT"
-  },
-  "engines": {
-    "node": ">=20.0.0"
-  },
-  "devDependencies": {
-    "vite": "^6.3.5"
+    "start": "node app.js",
+    "dev": "node app.js"
   },
   "dependencies": {
     "@mediapipe/camera_utils": "^0.3.1675466862",
-    "@mediapipe/face_mesh": "^0.4.1633559619",
-    "@mediapipe/hands": "^0.4.1675469240"
+    "@mediapipe/hands": "^0.4.1675469240",
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

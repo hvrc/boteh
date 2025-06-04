@@ -1,6 +1,6 @@
 body {
   margin: 0;
-  padding: 20px 0;
+  padding: 40px; /* Increased padding around everything */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -12,9 +12,9 @@ body {
 
 .container {
   position: relative;
-  width: min(480px, 100vw);
-  height: min(480px, 100vw);
-  margin: 20px auto;
+  width: min(400px, calc(100vw - 80px)); /* Reduced from 480px */
+  height: min(400px, calc(100vw - 80px)); /* Reduced from 480px */
+  margin: 10px auto;
 }
 
 #webcam {
@@ -47,15 +47,15 @@ body {
 
 /* Default state for controls */
 .controls {
-    padding: 15px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: min(480px, 100vw);
-    box-sizing: border-box;
-    opacity: 1;
-    margin: 0 auto;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: min(400px, calc(100vw - 80px)); /* Match container width */
+  box-sizing: border-box;
+  opacity: 1;
+  margin: 0 auto;
 }
 
 /* Common disabled state styling for all controls */
@@ -107,9 +107,9 @@ body {
 
 .slider-container {
   position: relative;
-  width: 60px;  /* Reduced from 80px */
-  height: 60px; /* Reduced from 80px */
-  margin: 8px;  /* Reduced from 10px */
+  width: 50px;  /* Reduced from 60px */
+  height: 50px; /* Reduced from 60px */
+  margin: 6px;  /* Reduced from 8px */
   overflow: visible; /* Changed from hidden to show text */
   user-select: none;
   flex: 0 0 auto;
@@ -119,12 +119,12 @@ body {
 .slider-container label,
 .button-container label {
   position: absolute;
-  top: 6px; /* Moved up from 10px */
+  top: 4px; /* Moved up from 10px */
   left: 0;
   width: 100%;
   text-align: center;
   color: #000;
-  font-size: 14px;
+  font-size: 12px; /* Reduced from 14px */
   text-transform: lowercase;
   font-family: monospace;
   z-index: 2;
@@ -146,15 +146,15 @@ body {
 }
 
 .slider-group {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-    width: min(480px, 100vw);
-    margin: 0 auto;
-    box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px; /* Reduced from 10px */
+  padding: 8px; /* Reduced from 10px */
+  width: min(400px, calc(100vw - 80px)); /* Match container width */
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 /* Toggle switch styling */
@@ -206,12 +206,12 @@ input:checked + .toggle-slider:before {
 .value-display, 
 .slider-container span {
     position: absolute;
-    bottom: 6px; /* Moved up from 10px */
+    bottom: 4px;     /* Adjusted for smaller container */
     left: 0;
     width: 100%;
     text-align: center;
     color: #000;
-    font-size: 12px;
+    font-size: 10px; /* Reduced from 12px */
     font-family: monospace;
     z-index: 2;
     pointer-events: none;
@@ -223,20 +223,21 @@ input:checked + .toggle-slider:before {
 input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     background: #fff;
     outline: none;
     margin: 0;
     cursor: pointer;
     position: relative;
     border: 1px solid #000;
+    overflow: hidden; /* Add this to contain the fill */
 }
 
-/* Remove pseudo-element approach and use gradient background instead */
+/* Update track styling */
 input[type="range"]::-webkit-slider-runnable-track {
     width: 100%;
-    height: 60px;
+    height: 50px; /* Match the input height */
     -webkit-appearance: none;
     background: linear-gradient(to right, #CCCCFF var(--value-percent, 0%), transparent 0%);
     border: none;
@@ -244,7 +245,7 @@ input[type="range"]::-webkit-slider-runnable-track {
 
 input[type="range"]::-moz-range-track {
     width: 100%;
-    height: 60px;
+    height: 50px; /* Match the input height */
     appearance: none;
     background: linear-gradient(to right, #CCCCFF var(--value-percent, 0%), transparent 0%);
     border: none;
@@ -280,9 +281,9 @@ input[type="range"]::-moz-range-thumb {
 /* Update button styling */
 .button-container {
     position: relative;
-    width: 60px;  /* Match slider size */
-    height: 60px; /* Match slider size */
-    margin: 8px;  /* Match slider margin */
+    width: 50px;  /* Reduced from 60px */
+    height: 50px; /* Reduced from 60px */
+    margin: 6px;  /* Reduced from 8px */
     user-select: none;
     flex: 0 0 auto;
     box-sizing: border-box;

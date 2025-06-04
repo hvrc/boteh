@@ -1,11 +1,3 @@
-runtime: nodejs20
+runtime: nodejs22
+instance_class: F1
 env: standard
-
-handlers:
-  - url: /(.*\.(js|css|png|jpg|jpeg|gif|ico|json))$
-    static_files: dist/\1
-    upload: dist/.*\.(js|css|png|jpg|jpeg|gif|ico|json)$
-
-  - url: /.*
-    static_files: dist/index.html
-    upload: dist/index.html

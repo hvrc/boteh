@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <title>Boteh</title>
-  <link rel="icon" type="image/png" href="public/icon.png">
-  <link rel="stylesheet" href="src/styles.css">
+  <link rel="icon" type="image/png" href="/public/icon.png">
+  <link rel="stylesheet" href="/src/styles.css">
+  <!-- Add MediaPipe dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 </head>
 <body>
   <div class="container">
@@ -170,7 +173,7 @@
         <span id="reverbValue">30%</span>
       </div>
     </div>
-  </div>  <script type="module" src="src/main.js"></script>
-  <script src="src/slider.js"></script>
+  </div>  <script type="module" src="/src/main.js"></script>
+  <script type="module" src="/src/slider.js"></script>
 </body>
 </html>

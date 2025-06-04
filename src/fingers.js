@@ -1,5 +1,5 @@
-import { Hands } from '@mediapipe/hands';
-import { Camera } from '@mediapipe/camera_utils';
+// import { Hands } from '@mediapipe/hands';
+// import { Camera } from '@mediapipe/camera_utils';
 
 export class HandDetector {
   static minDistance = 0.03;
