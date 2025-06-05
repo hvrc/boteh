@@ -369,7 +369,6 @@ input[type="range"]::-moz-range-thumb {
     cursor: pointer !important;
 }
 
-/* Keep the existing button styles */
 .button-container label {
     position: absolute;
     top: 10px;
@@ -377,7 +376,7 @@ input[type="range"]::-moz-range-thumb {
     width: 100%;
     text-align: center;
     color: #000;
-    font-size: 14px; /* Reduced from 18px */
+    font-size: 14px;
     text-transform: lowercase;
     font-family: monospace;
     z-index: 2;
@@ -391,13 +390,12 @@ input[type="range"]::-moz-range-thumb {
     width: 100%;
     text-align: center;
     color: #000;
-    font-size: 12px; /* Reduced from 16px */
+    font-size: 12px;
     font-family: monospace;
     pointer-events: none;
     text-transform: lowercase;
 }
 
-/* Remove zoom-related media queries */
 @media (max-width: 768px) {
     body {
         padding: 10px 0;
@@ -407,7 +405,6 @@ input[type="range"]::-moz-range-thumb {
     }
 }
 
-/* Remove large screen media query completely */
 @media (min-width: 1440px) {
     body {
         padding: 20px 0;

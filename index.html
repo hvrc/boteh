@@ -5,7 +5,6 @@
   <title>Boteh</title>
   <link rel="icon" type="image/png" href="/public/icon.png">
   <link rel="stylesheet" href="/src/styles.css">
-  <!-- Add MediaPipe dependencies -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 </head>
@@ -16,7 +15,6 @@
   </div>
   <div class="controls">
     <div class="slider-group">
-      <!-- Add master switch as first control -->
       <div class="button-container master-control">
         <label for="masterSwitch">power</label>
         <button id="masterSwitch" class="toggle-button" data-state="off">
@@ -24,14 +22,12 @@
         </button>
       </div>
 
-      <!-- Add grid size control after the master switch -->
       <div class="slider-container">
         <label for="gridSizeSlider">grid</label>
         <input type="range" id="gridSizeSlider" min="1" max="20" value="15" step="1">
         <span class="value-display" id="gridSizeValue">15</span>
       </div>
 
-      <!-- Main Controls -->
       <div class="slider-container">
         <label for="volumeSlider">vol</label>
         <input type="range" id="volumeSlider" min="0" max="100" value="10">
@@ -50,7 +46,6 @@
         <span class="value-display" id="scaleValue">pentatonic</span>
       </div>
 
-      <!-- Mode Controls -->
       <div class="button-container">
         <label for="expandMode">spread</label>
         <button id="expandMode" class="toggle-button" data-state="off">
@@ -72,7 +67,6 @@
         </button>
       </div>
 
-      <!-- Oscillator 1 Controls -->
       <div class="slider-container">
         <label for="mainOscGainSlider">osc 1 vol</label>
         <input type="range" id="mainOscGainSlider" min="0" max="100" value="50">
@@ -91,7 +85,6 @@
         <span id="mainOscOctaveValue">0</span>
       </div>
 
-      <!-- Oscillator 2 Controls -->
       <div class="slider-container">
         <label for="subOscGainSlider">osc 2 vol</label>
         <input type="range" id="subOscGainSlider" min="0" max="100" value="20">
@@ -110,7 +103,6 @@
         <span id="subOscOctaveValue">-2</span>
       </div>
 
-      <!-- Envelope and Filter Controls -->
       <div class="slider-container">
         <label for="attackSlider">attack</label>
         <input type="range" id="attackSlider" min="0" max="40" value="2">
@@ -129,20 +121,12 @@
         <span id="filterResonanceValue">0</span>
       </div>
 
-      <!-- Glide Controls -->
       <div class="slider-container">
         <label for="glideSlider">glide</label>
         <input type="range" id="glideSlider" min="0" max="500" value="0">
         <span id="glideValue">0ms</span>
       </div>
 
-      <!-- <div class="slider-container">
-        <label for="glideModeSlider">Glide Mode:</label>
-        <input type="range" id="glideModeSlider" min="0" max="1" value="0" step="1">
-        <span id="glideModeValue">Glissando</span>
-      </div> -->
-
-      <!-- Global Effects -->
       <div class="slider-container">
         <label for="pitchSlider">pitch</label>
         <input type="range" 

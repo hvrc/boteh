@@ -4,23 +4,22 @@
 export class HandDetector {
   static minDistance = 0.03;
   static maxDistance = 0.07;
-  static GRID_SIZE = 15; // Default grid size
+  static GRID_SIZE = 15;
   
   constructor(videoElement, canvasElement) {
     this.videoElement = videoElement;
     this.canvasElement = canvasElement;
     this.canvasContext = canvasElement.getContext('2d');
-    this.fingerStates = new Map(); // Track state for each finger
-    this.activeCells = new Set(); // Track cells with green circles
-    this.fingerDirections = new Map(); // Track expand direction for each finger
+    this.fingerStates = new Map();
+    this.activeCells = new Set();
+    this.fingerDirections = new Map();
     this.expandDirection = this.getRandomDirection();
-    this.expandedCells = new Set(); // Track expanded cells separately
+    this.expandedCells = new Set();
     this.gridSize = HandDetector.GRID_SIZE;
     this.setupHandDetection();
   }
 
   setupHandDetection() {
-    // Initialize MediaPipe Hands
     this.hands = new Hands({
       locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
     });
@@ -32,7 +31,6 @@ export class HandDetector {
       minTrackingConfidence: 0.5
     });
 
-    // Start webcam with 1:1 aspect ratio
     const size = Math.min(640, 480);
     this.camera = new Camera(this.videoElement, {
       onFrame: async () => {
@@ -45,12 +43,10 @@ export class HandDetector {
 
   async start(onResults) {
     try {
-      // Ensure complete cleanup before starting
       if (this.hands) {
         await this.stop();
       }
 
-      // Reinitialize MediaPipe Hands
       this.hands = new Hands({
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
       });
@@ -62,14 +58,11 @@ export class HandDetector {
         minTrackingConfidence: 0.5
       });
 
-      // Set up camera with proper initialization sequence
       const size = Math.min(640, 480);
       await this.hands.initialize();
       
-      // Set callback first
       await this.hands.onResults(onResults);
       
-      // Then initialize and start camera
       this.camera = new Camera(this.videoElement, {
         onFrame: async () => {
           if (this.hands) {
@@ -89,23 +82,20 @@ export class HandDetector {
 
   stop() {
     try {
-        // First, stop the camera feed
+
         if (this.camera) {
             this.camera.stop();
         }
-        
-        // Remove callback and wait for camera to fully stop
+
         if (this.hands) {
-            this.hands.onResults(() => {}); // Set empty callback
+            this.hands.onResults(() => {});
         }
         
-        // Clear states
         this.activeCells.clear();
         this.expandedCells.clear();
         this.fingerStates.clear();
         this.fingerDirections.clear();
 
-        // Clean up MediaPipe resources
         return new Promise((resolve) => {
             setTimeout(() => {
                 if (this.hands) {
@@ -118,7 +108,7 @@ export class HandDetector {
                 this.hands = null;
                 this.camera = null;
                 resolve();
-            }, 300); // Give more time for cleanup
+            }, 300);
         });
     } catch (error) {
         console.warn('Error during HandDetector cleanup:', error);
@@ -132,7 +122,7 @@ export class HandDetector {
   }
   setGridSize(size) {
     this.gridSize = size;
-    HandDetector.GRID_SIZE = size; // Add this line to keep static and instance in sync
+    HandDetector.GRID_SIZE = size;
     this.activeCells.clear();
     this.expandedCells.clear();
   }
@@ -149,7 +139,6 @@ export class HandDetector {
     fingerTipIndices.forEach((tipIndex) => {
         const tipPosition = landmarks[tipIndex];
         
-        // Calculate minimum distance to other finger tips on the SAME hand
         let minDistance = 1;
         fingerTipIndices.forEach((otherTipIndex) => {
             if (otherTipIndex !== tipIndex) {
@@ -162,7 +151,6 @@ export class HandDetector {
             }
         });
 
-        // Get or initialize finger state
         if (!this.fingerStates.has(tipIndex)) {
             this.fingerStates.set(tipIndex, {
                 normalizedDistance: 0,
@@ -174,11 +162,9 @@ export class HandDetector {
         }
         const state = this.fingerStates.get(tipIndex);
 
-        // Adjust distance thresholds for better recognition
-        const MIN_DISTANCE = 0.02;  // Reduced from 0.03
-        const MAX_DISTANCE = 0.08;  // Increased from 0.07
+        const MIN_DISTANCE = 0.02;
+        const MAX_DISTANCE = 0.08;
 
-        // Calculate target values with adjusted thresholds
         let targetNormalized = Math.min(
             Math.max(
                 (minDistance - MIN_DISTANCE) / 
@@ -188,7 +174,6 @@ export class HandDetector {
             1
         );
 
-        // Add hysteresis to prevent flickering
         const now = performance.now();
         const HYSTERESIS_TIME = 100; // ms
         if (targetNormalized > 0.8 && now - state.lastActiveTime > HYSTERESIS_TIME) {
@@ -196,19 +181,16 @@ export class HandDetector {
             state.lastActiveTime = now;
         }
 
-        // Smoother transitions
         state.normalizedDistance = this.smoothTransition(
             state.normalizedDistance, 
             targetNormalized,
-            0.3  // Increased smoothing factor
+            0.3
         );
 
-        // Calculate color with smoother transitions
         state.currentRed = this.smoothTransition(state.currentRed, 255 * (1 - state.normalizedDistance));
         state.currentGreen = this.smoothTransition(state.currentGreen, 255 * state.normalizedDistance);
         state.currentAlpha = this.smoothTransition(state.currentAlpha, state.normalizedDistance);
 
-        // Comment out circle drawing but keep for reference
         /*
         this.canvasContext.beginPath();
         this.canvasContext.arc(
@@ -223,13 +205,11 @@ export class HandDetector {
         this.canvasContext.fill();
         */
 
-        // Activate cell if finger is green enough
         if (state.currentGreen > 200 && state.currentAlpha > 0.8) {
             const cell = this.getGridCell(tipPosition.x, tipPosition.y);
             const cellKey = `${cell.x},${cell.y}`;
             this.activeCells.add(cellKey);
 
-            // Handle expand mode
             if (expandMode) {
                 if (!this.fingerDirections.has(tipIndex)) {
                     this.fingerDirections.set(tipIndex, this.getRandomDirection());

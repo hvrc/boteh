@@ -1,4 +1,3 @@
-// Add event listeners to all sliders to update their fill effect
 document.addEventListener('DOMContentLoaded', () => {
     const sliders = document.querySelectorAll('input[type="range"]');
     
@@ -11,10 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     sliders.forEach(slider => {
-        // Initial update
         updateSliderFill(slider);
         
-        // Update on input and change events
         ['input', 'change'].forEach(eventType => {
             slider.addEventListener(eventType, () => {
                 updateSliderFill(slider);

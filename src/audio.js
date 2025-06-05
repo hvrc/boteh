@@ -1,47 +1,41 @@
 import { HandDetector } from './fingers.js';
 
 export class AudioEngine {
-  // Add scales configuration
   static SCALES = {
     pentatonic: {
       name: 'Pentatonic',
-      ratios: [1, 1.2, 1.3333, 1.5, 1.8], // A, C, D, E, G
+      ratios: [1, 1.2, 1.3333, 1.5, 1.8],
     },
     major: {
       name: 'Major',
-      ratios: [1, 1.125, 1.25, 1.3333, 1.5, 1.6667, 1.875], // C, D, E, F, G, A, B
+      ratios: [1, 1.125, 1.25, 1.3333, 1.5, 1.6667, 1.875],
     },
     minor: {
       name: 'Natural Minor',
-      ratios: [1, 1.125, 1.2, 1.3333, 1.5, 1.6, 1.75], // C, D, Eb, F, G, Ab, Bb
+      ratios: [1, 1.125, 1.2, 1.3333, 1.5, 1.6, 1.75],
     },
     harmonicMinor: {
       name: 'Harmonic Minor',
-      ratios: [1, 1.125, 1.2, 1.3333, 1.5, 1.6, 1.875], // C, D, Eb, F, G, Ab, B
+      ratios: [1, 1.125, 1.2, 1.3333, 1.5, 1.6, 1.875],
     },
     blues: {
       name: 'Blues',
-      ratios: [1, 1.2, 1.25, 1.333, 1.5, 1.6], // C, Eb, E, F, G, A
+      ratios: [1, 1.2, 1.25, 1.333, 1.5, 1.6],
     }
   };
 
   constructor() {
-    // Initialize Web Audio API
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
     
-    // Resume audio context (needed for browsers)
     if (this.audioContext.state === 'suspended') {
       this.audioContext.resume();
     }
     
-    // Initialize scale
     this.currentScale = 'pentatonic';
     
-    // Filter parameters
-    this.filterCutoff = 2000; // Changed from 20000
+    this.filterCutoff = 2000;
     this.filterResonance = 0;
     
-    // Sequencer state
     this.isPlaying = true;
     this.currentStep = 0;
     this.tempo = 222;
@@ -51,51 +45,40 @@ export class AudioEngine {
     this.scheduleAhead = 0.1;
     this.delayAmount = 0.3;
     
-    // Envelope parameters
     this.attack = 0.002;
     this.release = 0.05;
     
-    // Oscillator gain
-    this.mainOscGain = 0.1; // Changed from 0.5 (10% volume)
+    this.mainOscGain = 0.1;
     this.subOscGain = 0.2;
     
-    // Oscillator types and octaves
     this.mainOscType = 'sine';
-    this.subOscType = 'sine'; // Changed from triangle
+    this.subOscType = 'sine';
     this.mainOscOctave = 0;
-    this.subOscOctave = -2; // Changed from -1
+    this.subOscOctave = -2;
     
-    // Glide time
     this.glideTime = 0;
     
-    // Add portamento state
     this.isPortamento = false;
     this.lastFrequency = null;
     
-    // Pitch shift property
     this.pitchShift = 0;
     
-    // Initialize audio components
     this.setupEffects();
     this.setupScales();
     this.setupOscillators();
     
-    // Start master sequencer
     this.scheduler();
   }
 
   setupEffects() {
-    // Create main gain node
     this.mainGainNode = this.audioContext.createGain();
-    this.mainGainNode.gain.value = 0.1; // Changed from 0.5 to match 10% volume
+    this.mainGainNode.gain.value = 0.1;
 
-    // Create filter
     this.filter = this.audioContext.createBiquadFilter();
     this.filter.type = 'lowpass';
-    this.filter.frequency.value = this.filterCutoff; // Now 2.0kHz from constructor
+    this.filter.frequency.value = this.filterCutoff;
     this.filter.Q.value = this.filterResonance;
 
-    // Create ping pong delay components
     this.leftDelay = this.audioContext.createDelay();
     this.rightDelay = this.audioContext.createDelay();
     this.leftGain = this.audioContext.createGain();
@@ -105,29 +88,25 @@ export class AudioEngine {
     this.feedbackGainLeft = this.audioContext.createGain();
     this.feedbackGainRight = this.audioContext.createGain();
 
-    // Set initial delay times and gains
     this.feedbackGainLeft.gain.value = 0.75;
     this.feedbackGainRight.gain.value = 0.75;
     this.leftDelay.delayTime.value = 0.3;
     this.rightDelay.delayTime.value = 0.4;
-    this.leftGain.gain.value = 0.3; // 30% delay mix
-    this.rightGain.gain.value = 0.3; // 30% delay mix
+    this.leftGain.gain.value = 0.3;
+    this.rightGain.gain.value = 0.3;
     
-    // Create stereo panner for ping pong effect
     this.leftPanner = this.audioContext.createStereoPanner();
     this.rightPanner = this.audioContext.createStereoPanner();
     this.leftPanner.pan.value = -1;
     this.rightPanner.pan.value = 1;
 
-    // Create reverb components
     this.reverbNode = this.audioContext.createConvolver();
     this.createReverb(2.5);
     this.dryGain = this.audioContext.createGain();
     this.wetGain = this.audioContext.createGain();
-    this.dryGain.gain.value = Math.sqrt(0.7); // 70% dry for 30% wet
-    this.wetGain.gain.value = Math.sqrt(0.3) * 5; // 30% wet with compensation
+    this.dryGain.gain.value = Math.sqrt(0.7);
+    this.wetGain.gain.value = Math.sqrt(0.3) * 5;
 
-    // Create compressor for dynamic range control
     this.compressor = this.audioContext.createDynamicsCompressor();
     this.compressor.threshold.value = -24;
     this.compressor.knee.value = 30;
@@ -135,31 +114,25 @@ export class AudioEngine {
     this.compressor.attack.value = 0.003;
     this.compressor.release.value = 0.25;
 
-    // Connect nodes in the proper order:
-    // 1. Filter stage
     this.filter.connect(this.dryGain);
     this.filter.connect(this.leftDelay);
     this.filter.connect(this.rightDelay);
 
-    // 2. Delay stage with feedback
     this.leftDelay.connect(this.leftGain);
     this.rightDelay.connect(this.rightGain);
     this.leftGain.connect(this.leftPanner);
     this.rightGain.connect(this.rightPanner);
     
-    // Set up cross-feedback for ping-pong effect
     this.leftPanner.connect(this.feedbackGainRight);
     this.rightPanner.connect(this.feedbackGainLeft);
     this.feedbackGainRight.connect(this.rightDelay);
     this.feedbackGainLeft.connect(this.leftDelay);
     
-    // 3. Connect delay outputs to both dry and wet paths
     this.leftPanner.connect(this.dryGain);
     this.leftPanner.connect(this.reverbNode);
     this.rightPanner.connect(this.dryGain);
     this.rightPanner.connect(this.reverbNode);
     
-    // 4. Final output stage
     this.dryGain.connect(this.mainGainNode);
     this.reverbNode.connect(this.wetGain);
     this.wetGain.connect(this.mainGainNode);
@@ -168,7 +141,6 @@ export class AudioEngine {
 }
 
   async createReverb(duration) {
-    // Ensure minimum duration of 0.1 seconds
     const minDuration = 0.1;
     duration = Math.max(minDuration, duration);
     
@@ -180,7 +152,6 @@ export class AudioEngine {
 
     for (let i = 0; i < length; i++) {
         const n = i / length;
-        // Decay curve
         const amplitude = Math.pow(1 - n, 2) * Math.random() * 0.5;
         left[i] = amplitude * (Math.random() * 2 - 1);
         right[i] = amplitude * (Math.random() * 2 - 1);
@@ -190,14 +161,13 @@ export class AudioEngine {
   }
 
   setupScales(gridSize = HandDetector.GRID_SIZE) {
-    const baseFrequency = 220.00; // A3 as base frequency
+    const baseFrequency = 220.00;
     this.frequencies = [];
     const scale = AudioEngine.SCALES[this.currentScale];
     
     for (let y = 0; y < gridSize; y++) {
         for (let x = 0; x < gridSize; x++) {
             const octave = Math.floor(y / 3);
-            // Flip x coordinate by subtracting from gridSize - 1
             const noteIndex = (gridSize - 1 - x) % scale.ratios.length;
             
             const frequency = baseFrequency * 
@@ -217,7 +187,6 @@ export class AudioEngine {
     if (AudioEngine.SCALES[scaleName]) {
         this.currentScale = scaleName;
         this.setupScales();
-        // Update currently playing notes if any
         if (this.activeNotes.size > 0) {
             const activeNotes = Array.from(this.activeNotes);
             this.stopArpeggio();
@@ -235,18 +204,16 @@ export class AudioEngine {
   playNote(x, y) {
         const key = `${x},${y}`;
         if (this.oscillators.has(key)) {
-            return; // Note already playing
+            return;
         }
 
         const noteData = this.frequencies.find(n => n.x === x && n.y === y);
         if (!noteData) return;
 
         const now = this.audioContext.currentTime;
-        // Schedule note start with no release time for sustained playback
         this.scheduleNoteOn({ x, y }, now);
     }
 
-    // Add a method to stop specific note
     stopNote(x, y) {
         const key = `${x},${y}`;
         const sound = this.oscillators.get(key);
@@ -254,18 +221,15 @@ export class AudioEngine {
 
         const now = this.audioContext.currentTime;
         
-        // Smooth release
         sound.noteGain.gain.cancelScheduledValues(now);
         sound.noteGain.gain.setValueAtTime(sound.noteGain.gain.value, now);
         sound.noteGain.gain.exponentialRampToValueAtTime(0.001, now + this.release);
 
-        // Clean up oscillators after release
         setTimeout(() => {
             this.cleanupOscillators(key);
         }, this.release * 1000 + 100);
     }
 
-    // Add cleanup helper method
     cleanupOscillators(key) {
         const sound = this.oscillators.get(key);
         if (!sound) return;
@@ -275,7 +239,6 @@ export class AudioEngine {
                 osc.stop();
                 osc.disconnect();
             } catch (e) {
-                // Ignore errors if oscillator is already stopped
             }
         });
 
@@ -289,7 +252,6 @@ export class AudioEngine {
     }
 
   scheduler() {
-    // Look ahead and schedule notes
     while (this.nextStepTime < this.audioContext.currentTime + this.scheduleAhead) {
       if (this.activeNotes.size > 0) {
         this.scheduleNextNote(this.currentStep, this.nextStepTime);
@@ -297,7 +259,6 @@ export class AudioEngine {
       this.nextStep();
     }
     
-    // Call scheduler again
     requestAnimationFrame(() => this.scheduler());
   }
 
@@ -314,13 +275,11 @@ export class AudioEngine {
             const [x, y] = noteToPlay.split(',').map(Number);
             const noteData = this.frequencies.find(n => n.x === x && n.y === y);
             if (noteData) {
-                // Apply pitch shift to base frequency calculations
                 const pitchShiftMultiplier = Math.pow(2, this.pitchShift / 12);
                 const mainFreq = noteData.frequency * Math.pow(2, this.mainOscOctave) * pitchShiftMultiplier;
                 const subFreq = noteData.frequency * Math.pow(2, this.subOscOctave) * pitchShiftMultiplier;
                 
                 if (this.isPortamento) {
-                    // Continuous slide for portamento
                     this.arpOscillators.mainOsc.frequency.exponentialRampToValueAtTime(
                         mainFreq,
                         time + this.glideTime
@@ -330,7 +289,6 @@ export class AudioEngine {
                         time + this.glideTime
                     );
                 } else {
-                    // Two-step transition for glissando
                     this.arpOscillators.mainOsc.frequency.setValueAtTime(
                         this.arpOscillators.mainOsc.frequency.value,
                         time
@@ -352,7 +310,6 @@ export class AudioEngine {
             }
         }
     } else {
-        // Normal arpeggiator behavior without glide
         if (this.lastNotePlayed) {
             const [prevX, prevY] = this.lastNotePlayed.split(',').map(Number);
             this.scheduleNoteOff({ x: prevX, y: prevY }, time);
@@ -367,21 +324,17 @@ export class AudioEngine {
     }
 }
 
-// Update setPitchShift to affect both arpeggiator and normal notes
 setPitchShift(semitones, smooth = false) {
     this.pitchShift = semitones;
     const now = this.audioContext.currentTime;
     const transitionTime = smooth ? 0.03 : 0;
 
-    // Helper function to calculate pitched frequency
     const getPitchedFrequency = (baseFreq) => baseFreq * Math.pow(2, this.pitchShift / 12);
 
-    // Update currently playing oscillators
     this.oscillators.forEach((sound, key) => {
         const [x, y] = key.split(',').map(Number);
         const noteData = this.frequencies.find(n => n.x === x && n.y === y);
         if (noteData) {
-            // Calculate base frequencies with octave
             const mainBaseFreq = noteData.frequency * Math.pow(2, this.mainOscOctave);
             const subBaseFreq = noteData.frequency * Math.pow(2, this.subOscOctave);
             
@@ -417,7 +370,6 @@ setPitchShift(semitones, smooth = false) {
 }
 
   startArpOscillators(time) {
-    // Create sustained oscillators for gliding arpeggiator
     this.arpOscillators = {
         mainOsc: this.audioContext.createOscillator(),
         subOsc: this.audioContext.createOscillator(),
@@ -428,20 +380,17 @@ setPitchShift(semitones, smooth = false) {
 
     const { mainOsc, subOsc, mainGain, subGain, noteGain } = this.arpOscillators;
 
-    // Set initial properties
     mainOsc.type = this.mainOscType;
     subOsc.type = this.subOscType;
     mainGain.gain.value = this.mainOscGain;
     subGain.gain.value = this.subOscGain;
     noteGain.gain.value = 0.7;
 
-    // Connect oscillators through gain nodes
     mainOsc.connect(mainGain);
     subOsc.connect(subGain);
     mainGain.connect(noteGain);
     subGain.connect(noteGain);
 
-    // Effects routing
     const dryGain = this.audioContext.createGain();
     const wetGain = this.audioContext.createGain();
     dryGain.gain.value = 0.7;
@@ -452,14 +401,12 @@ setPitchShift(semitones, smooth = false) {
     dryGain.connect(this.mainGainNode);
     wetGain.connect(this.reverbNode);
 
-    // Add delay send
     const delaySend = this.audioContext.createGain();
     delaySend.gain.value = this.delayAmount;
     noteGain.connect(delaySend);
     delaySend.connect(this.leftDelay);
     delaySend.connect(this.rightDelay);
 
-    // Start oscillators
     mainOsc.start(time);
     subOsc.start(time);
   }
@@ -469,7 +416,6 @@ setPitchShift(semitones, smooth = false) {
     const noteData = this.frequencies.find(n => n.x === cell.x && n.y === cell.y);
     if (!noteData) return;
 
-    // Create oscillators and initial gain nodes
     const mainOsc = this.audioContext.createOscillator();
     const subOsc = this.audioContext.createOscillator();
     const mainGain = this.audioContext.createGain();
@@ -479,18 +425,15 @@ setPitchShift(semitones, smooth = false) {
     const oscillators = [];
     const gainNodes = [];
 
-    // Calculate frequencies with pitch shift
     const pitchShiftMultiplier = Math.pow(2, this.pitchShift / 12);
     const mainFreq = noteData.frequency * Math.pow(2, this.mainOscOctave) * pitchShiftMultiplier;
     const subFreq = noteData.frequency * Math.pow(2, this.subOscOctave) * pitchShiftMultiplier;
 
-    // Set oscillator types
     mainOsc.type = this.mainOscType;
     subOsc.type = this.subOscType;
 
-    // Apply glide if needed
     if (this.glideTime > 0 && this.oscillators.size > 0) {
-        const glideEndTime = time + (this.glideTime / 1000); // Convert glideTime to seconds
+        const glideEndTime = time + (this.glideTime / 1000);
         if (this.isPortamento) {
             mainOsc.frequency.exponentialRampToValueAtTime(mainFreq, glideEndTime);
             subOsc.frequency.exponentialRampToValueAtTime(subFreq, glideEndTime);
@@ -505,22 +448,17 @@ setPitchShift(semitones, smooth = false) {
         subOsc.frequency.value = subFreq;
     }
 
-    // Set gains
     mainGain.gain.value = this.mainOscGain;
     subGain.gain.value = this.subOscGain;
 
-    // Connect oscillators to their respective gain nodes
     mainOsc.connect(mainGain);
     subOsc.connect(subGain);
     
-    // Connect both oscillator gains to the note gain
     mainGain.connect(noteGain);
     subGain.connect(noteGain);
 
-    // Connect note gain to filter
     noteGain.connect(this.filter);
 
-    // Apply attack envelope
     noteGain.gain.setValueAtTime(0, time);
     noteGain.gain.linearRampToValueAtTime(0.7, time + this.attack);
     
@@ -529,16 +467,13 @@ setPitchShift(semitones, smooth = false) {
         noteGain.gain.exponentialRampToValueAtTime(0.001, releaseTime);
     }
 
-    // Start oscillators at exact time
     oscillators.push(mainOsc, subOsc);
     oscillators.forEach(osc => osc.start(time));
     
-    // If we have a release time, schedule the oscillator stops
     if (releaseTime) {
         oscillators.forEach(osc => osc.stop(releaseTime + 0.1));
     }
 
-    // Store for cleanup
     this.oscillators.set(key, {
         oscillators,
         gainNodes: [mainGain, subGain],
@@ -547,26 +482,22 @@ setPitchShift(semitones, smooth = false) {
         releaseTime
     });
   }
-  // Consolidated scheduleNoteOff() method with updated cleanup
-scheduleNoteOff(cell, time) {
+  scheduleNoteOff(cell, time) {
     const key = `${cell.x},${cell.y}`;
     const sound = this.oscillators.get(key);
     if (!sound) return;
 
-    // Longer release to avoid abrupt cuts
     const releaseTime = 0.15;
     sound.noteGain.gain.cancelScheduledValues(time);
     sound.noteGain.gain.setValueAtTime(sound.noteGain.gain.value, time);
     sound.noteGain.gain.exponentialRampToValueAtTime(0.001, time + releaseTime);
 
-    // Clean up after release - adjusted timing to match longer release
     setTimeout(() => {
         sound.oscillators.forEach(osc => {
             try {
                 osc.stop();
                 osc.disconnect();
             } catch (e) {
-                // Ignore errors if oscillator is already stopped
             }
         });
         sound.gainNodes.forEach(gain => gain.disconnect());
@@ -579,18 +510,14 @@ scheduleNoteOff(cell, time) {
 }
 
   nextStep() {
-    // Move to next step
     this.currentStep++;
-    // Calculate precise time for next step
-    this.nextStepTime += this.stepInterval / 1000; // Convert to seconds
+    this.nextStepTime += this.stepInterval / 1000;
   }
   playArpeggio(activeCells) {
-    // Simply update the active notes, sequencer will play them
     this.activeNotes = new Set(activeCells.map(cell => `${cell.x},${cell.y}`));
   }
   stopArpeggio() {
     if (this.glideTime > 0 && this.arpOscillators) {
-        // Fade out and clean up gliding oscillators
         const now = this.audioContext.currentTime;
         this.arpOscillators.noteGain.gain.linearRampToValueAtTime(0, now + 0.1);
         
@@ -634,22 +561,19 @@ scheduleNoteOff(cell, time) {
     this.release = release;
   }
   setReverb(wetAmount) {
-    // Convert percentage to 0-1 range and adjust the curve
     const wet = wetAmount / 100;
     
-    // Calculate dry/wet mix with better curves
     const dryGain = Math.cos(wet * 0.5 * Math.PI);
     const wetGain = Math.sin(wet * 0.5 * Math.PI);
 
-    // Update gains with smooth transition
     const now = this.audioContext.currentTime;
-    const transitionTime = 0.016; // Smooth 60fps transition
+    const transitionTime = 0.016;
     
     this.dryGain.gain.cancelScheduledValues(now);
     this.wetGain.gain.cancelScheduledValues(now);
     
     this.dryGain.gain.setTargetAtTime(dryGain, now, transitionTime);
-    this.wetGain.gain.setTargetAtTime(wetGain * 10, now, transitionTime); // Boost wet signal
+    this.wetGain.gain.setTargetAtTime(wetGain * 10, now, transitionTime);
 }
 
   setMainOscType(type) {
@@ -683,7 +607,6 @@ scheduleNoteOff(cell, time) {
   }
 
   setGlideTime(time) {
-    // If turning off glide, clean up any gliding oscillators
     if (time === 0 && this.glideTime > 0 && this.arpOscillators) {
       const now = this.audioContext.currentTime;
       this.arpOscillators.noteGain.gain.linearRampToValueAtTime(0, now + 0.05);
@@ -709,43 +632,35 @@ scheduleNoteOff(cell, time) {
   }
 
   setFilterCutoff(frequency) {
-    // Clamp frequency between 20Hz and 20kHz
     frequency = Math.max(20, Math.min(20000, frequency));
     this.filterCutoff = frequency;
     const now = this.audioContext.currentTime;
-    // Use slightly longer fade time for smoother changes
-    const fadeTime = 0.016; // About 1 frame at 60fps for smooth updates
+    const fadeTime = 0.016;
     this.filter.frequency.exponentialRampToValueAtTime(frequency, now + fadeTime);
 }
 
 setFilterResonance(resonance) {
-    // Clamp resonance between 0 and 20
     resonance = Math.max(0, Math.min(20, resonance));
     this.filterResonance = resonance;
     const now = this.audioContext.currentTime;
-    // Use slightly longer fade time for smoother changes
-    const fadeTime = 0.016; // About 1 frame at 60fps for smooth updates
+    const fadeTime = 0.016;
     this.filter.Q.linearRampToValueAtTime(resonance, now + fadeTime);
 }
   updateHeldNotes() {
         const now = this.audioContext.currentTime;
-        const transitionTime = 0.016; // 60fps for smooth transition
+        const transitionTime = 0.016;
         
-        // Update all currently held notes
         this.oscillators.forEach((sound, key) => {
             const [x, y] = key.split(',').map(Number);
             const noteData = this.frequencies.find(n => n.x === x && n.y === y);
             if (!noteData) return;
 
-            // Calculate new frequencies with pitch shift
             const pitchShiftMultiplier = Math.pow(2, this.pitchShift / 12);
             const mainFreq = noteData.frequency * Math.pow(2, this.mainOscOctave) * pitchShiftMultiplier;
             const subFreq = noteData.frequency * Math.pow(2, this.subOscOctave) * pitchShiftMultiplier;
             
-            // Update oscillator types if they've changed
             const [mainOsc, subOsc] = sound.oscillators;
             if (mainOsc.type !== this.mainOscType) {
-                // Create a crossfade to avoid clicks
                 const tempOsc = this.audioContext.createOscillator();
                 const tempGain = this.audioContext.createGain();
                 tempOsc.type = this.mainOscType;
@@ -768,7 +683,6 @@ setFilterResonance(resonance) {
             }
             
             if (subOsc.type !== this.subOscType) {
-                // Create a crossfade for sub oscillator
                 const tempOsc = this.audioContext.createOscillator();
                 const tempGain = this.audioContext.createGain();
                 tempOsc.type = this.subOscType;
@@ -790,7 +704,6 @@ setFilterResonance(resonance) {
                 }, transitionTime * 1000);
             }
             
-            // Smoothly update frequencies
             if (mainOsc.frequency.value !== mainFreq) {
                 mainOsc.frequency.exponentialRampToValueAtTime(mainFreq, now + transitionTime);
             }
@@ -798,12 +711,10 @@ setFilterResonance(resonance) {
                 subOsc.frequency.exponentialRampToValueAtTime(subFreq, now + transitionTime);
             }
             
-            // Smoothly update gains
             sound.gainNodes[0].gain.linearRampToValueAtTime(this.mainOscGain, now + transitionTime);
             sound.gainNodes[1].gain.linearRampToValueAtTime(this.subOscGain, now + transitionTime);
         });
         
-        // Also update arpeggiator oscillators if they exist
         if (this.arpOscillators) {
             const activeNote = Array.from(this.activeNotes)[0];
             if (activeNote) {
@@ -814,7 +725,6 @@ setFilterResonance(resonance) {
                     const mainFreq = noteData.frequency * Math.pow(2, this.mainOscOctave) * pitchShiftMultiplier;
                     const subFreq = noteData.frequency * Math.pow(2, this.subOscOctave) * pitchShiftMultiplier;
                     
-                    // Update oscillator types with crossfade if needed
                     if (this.arpOscillators.mainOsc.type !== this.mainOscType) {
                         const { mainOsc, mainGain } = this.createArpOscillator(mainFreq, this.mainOscType, this.mainOscGain);
                         this.crossfadeArpOscillator('main', mainOsc, mainGain);
@@ -825,7 +735,6 @@ setFilterResonance(resonance) {
                         this.crossfadeArpOscillator('sub', subOsc, subGain);
                     }
                     
-                    // Smoothly update frequencies and gains
                     this.arpOscillators.mainOsc.frequency.exponentialRampToValueAtTime(mainFreq, now + transitionTime);
                     this.arpOscillators.subOsc.frequency.exponentialRampToValueAtTime(subFreq, now + transitionTime);
                     this.arpOscillators.mainGain.gain.linearRampToValueAtTime(this.mainOscGain, now + transitionTime);
@@ -836,7 +745,7 @@ setFilterResonance(resonance) {
     }
     
     setDelayFeedback(amount) {
-        const feedback = Math.min(Math.max(amount / 100, 0), 0.9); // Limit feedback to 90% to prevent runaway
+        const feedback = Math.min(Math.max(amount / 100, 0), 0.9);
         this.feedbackGainLeft.gain.setValueAtTime(feedback, this.audioContext.currentTime);
         this.feedbackGainRight.gain.setValueAtTime(feedback, this.audioContext.currentTime);
       }
@@ -846,7 +755,7 @@ setFilterResonance(resonance) {
         const gainNode = this.audioContext.createGain();
         osc.type = type;
         osc.frequency.value = freq;
-        gainNode.gain.value = 0; // Start at 0 for crossfade
+        gainNode.gain.value = 0;
         osc.connect(gainNode);
         gainNode.connect(this.arpOscillators.noteGain);
         osc.start(this.audioContext.currentTime);
