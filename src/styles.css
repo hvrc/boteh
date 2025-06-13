@@ -299,34 +299,13 @@ input[type="range"]::-moz-range-thumb {
     transition: background-color 0.1s ease;
 }
 
-/* Add disabled state styling */
-.controls.disabled .button-container:not(.master-control) .toggle-button {
-    opacity: 0.6;
-    pointer-events: none;
-    cursor: default;
-}
-
-/* Ensure master switch is always clickable */
-.master-control .toggle-button {
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    cursor: pointer !important;
-}
-
 .toggle-button[data-state="on"] {
     background: #CCCCFF;
 }
 
-/* Add specific styling for recording state */
-#recordButton[data-state="on"] {
-    background: #ffcccc;
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.4); }
-    70% { box-shadow: 0 0 0 6px rgba(255, 0, 0, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+/* Fine-tune record button position */
+#recordButton {
+    margin-left: 1px;
 }
 
 /* Add specific styling for the power button */

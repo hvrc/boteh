@@ -55,11 +55,11 @@ const UI = {
     delayFeedbackSlider: document.getElementById('delayFeedbackSlider'),
     delayFeedbackValue: document.getElementById('delayFeedbackValue'),
     gridSizeSlider: document.getElementById('gridSizeSlider'),
-    gridSizeValue: document.getElementById('gridSizeValue'),
-    presetSlider: document.getElementById('presetSlider'),
+    gridSizeValue: document.getElementById('gridSizeValue'),    presetSlider: document.getElementById('presetSlider'),
     presetValue: document.getElementById('presetValue'),
     instanceSlider: document.getElementById('instanceSlider'),
     instanceValue: document.getElementById('instanceValue'),
+    recordButton: document.getElementById('recordButton'),
 };
 
 let lastActiveCells = new Set();
@@ -735,14 +735,13 @@ document.addEventListener('DOMContentLoaded', () => {
         UI.masterSwitchValue.textContent = newState === 'on' ? 'On' : 'Off';
         
         if (newState === 'on') {
-            initializeApp();
-        } else {
+            initializeApp();        } else {
             shutdownSystem();
             
             // Stop recording if active
-            // if (UI.recordButton.getAttribute('data-state') === 'on') {
-            //     UI.recordButton.click(); // This will trigger the click handler to stop recording
-            // }
+            if (UI.recordButton && UI.recordButton.getAttribute('data-state') === 'on') {
+                UI.recordButton.click(); // This will trigger the click handler to stop recording
+            }
         }
     });
 
@@ -791,19 +790,31 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Initialize record button
-const recordButton = document.getElementById('recordButton');
-if (recordButton) {
-    recordButton.addEventListener('click', () => {
-        const isRecording = recordButton.getAttribute('data-state') === 'on';
+if (UI.recordButton) {
+    // Initialize the record button text
+    const recordButtonValue = document.getElementById('recordButtonValue');
+    if (recordButtonValue) {
+        recordButtonValue.textContent = 'Off';
+    }
+    
+    UI.recordButton.addEventListener('click', () => {
+        const isRecording = UI.recordButton.getAttribute('data-state') === 'on';
+        const currentAudioEngine = audioEngines.get(currentInstance);
         
         if (!isRecording) {
             // Start recording
-            audioEngine?.startRecording();
-            recordButton.setAttribute('data-state', 'on');
+            currentAudioEngine?.startRecording();
+            UI.recordButton.setAttribute('data-state', 'on');
+            if (recordButtonValue) {
+                recordButtonValue.textContent = 'On';
+            }
         } else {
             // Stop recording and export
-            audioEngine?.stopRecording();
-            recordButton.setAttribute('data-state', 'off');
+            currentAudioEngine?.stopRecording();
+            UI.recordButton.setAttribute('data-state', 'off');
+            if (recordButtonValue) {
+                recordButtonValue.textContent = 'Off';
+            }
         }
     });
 }

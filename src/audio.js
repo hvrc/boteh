@@ -879,41 +879,39 @@ setFilterResonance(resonance) {
         this.setDelayAmount(settings.delay / 100);
         this.setDelayFeedback(settings.delayFeedback / 100);
         this.setReverb(settings.reverb / 100);
-    }
-
-    setupRecording() {
+    }    setupRecording() {
       this.recordingDestination = this.audioContext.createMediaStreamDestination();
       this.mainGainNode.connect(this.recordingDestination);
     }
 
-    // startRecording() {
-    //   if (this.mediaRecorder) return;
+    startRecording() {
+      if (this.mediaRecorder) return;
       
-    //   this.recordedChunks = [];
-    //   this.mediaRecorder = new MediaRecorder(this.recordingDestination.stream);
+      this.recordedChunks = [];
+      this.mediaRecorder = new MediaRecorder(this.recordingDestination.stream);
       
-    //   this.mediaRecorder.ondataavailable = (event) => {
-    //     if (event.data.size > 0) {
-    //       this.recordedChunks.push(event.data);
-    //     }
-    //   };
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.recordedChunks.push(event.data);
+        }
+      };
       
-    //   this.mediaRecorder.onstop = () => {
-    //     const blob = new Blob(this.recordedChunks, { type: 'audio/wav' });
-    //     const url = URL.createObjectURL(blob);
-    //     const a = document.createElement('a');
-    //     a.href = url;
-    //     a.download = `boteh-recording-${new Date().toISOString()}.wav`;
-    //     a.click();
-    //     URL.revokeObjectURL(url);
-    //   };
+      this.mediaRecorder.onstop = () => {
+        const blob = new Blob(this.recordedChunks, { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `boteh-recording-${new Date().toISOString()}.wav`;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
       
-    //   this.mediaRecorder.start();
-    // }
+      this.mediaRecorder.start();
+    }
 
-    // stopRecording() {
-    //   if (!this.mediaRecorder) return;
-    //   this.mediaRecorder.stop();
-    //   this.mediaRecorder = null;
-    // }
+    stopRecording() {
+      if (!this.mediaRecorder) return;
+      this.mediaRecorder.stop();
+      this.mediaRecorder = null;
+    }
 }
