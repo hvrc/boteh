@@ -114,8 +114,10 @@ export class AudioEngine {
     this.compressor.attack.value = 0.003;
     this.compressor.release.value = 0.25;
 
+    // Modify the audio routing chain
     this.filter.connect(this.dryGain);
-    this.filter.connect(this.leftDelay);
+    this.filter.connect(this.reverbNode);  // Connect filter directly to reverb
+    this.filter.connect(this.leftDelay);   // And also to delays
     this.filter.connect(this.rightDelay);
 
     this.leftDelay.connect(this.leftGain);
@@ -129,8 +131,8 @@ export class AudioEngine {
     this.feedbackGainLeft.connect(this.leftDelay);
     
     this.leftPanner.connect(this.dryGain);
-    this.leftPanner.connect(this.reverbNode);
     this.rightPanner.connect(this.dryGain);
+    this.leftPanner.connect(this.reverbNode);   // Connect panners to reverb
     this.rightPanner.connect(this.reverbNode);
     
     this.dryGain.connect(this.mainGainNode);

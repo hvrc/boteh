@@ -56,6 +56,8 @@ const UI = {
     delayFeedbackValue: document.getElementById('delayFeedbackValue'),
     gridSizeSlider: document.getElementById('gridSizeSlider'),
     gridSizeValue: document.getElementById('gridSizeValue'),
+    presetSlider: document.getElementById('presetSlider'),
+    presetValue: document.getElementById('presetValue'),
 };
 
 let lastActiveCells = new Set();
@@ -619,6 +621,16 @@ document.addEventListener('DOMContentLoaded', () => {
         UI.holdMode.value = newState === 'on' ? '1' : '0';
         handleHoldModeChange(newState === 'on' ? '1' : '0');
     });
+
+    UI.presetSlider.addEventListener('input', async (e) => {
+        const presetNumber = e.target.value;
+        UI.presetValue.textContent = presetNumber;
+        
+        const presets = await loadPresets();
+        if (presets && presets[presetNumber]) {
+            applyPreset(presets[presetNumber]);
+        }
+    });
 });
 
 function handlePitchChange(value) {
@@ -653,6 +665,50 @@ function handleFilterResonanceChange(value) {
     if (audioEngine) {
         audioEngine.setFilterResonance(resonance);
     }
+}
+
+async function loadPresets() {
+    try {
+        const response = await fetch('/src/presets.json');
+        if (!response.ok) throw new Error('Failed to load presets');
+        return await response.json();
+    } catch (error) {
+        console.error('Error loading presets:', error);
+        return null;
+    }
+}
+
+function applyPreset(preset) {
+    if (!preset) return;
+
+    // Update all slider values and their fills
+    const updateSlider = (slider, value) => {
+        slider.value = value;
+        const event = new Event('input');
+        slider.dispatchEvent(event);
+    };
+
+    // Replace the direct value assignments with the updateSlider function
+    updateSlider(UI.volumeSlider, preset.volume);
+    updateSlider(UI.bpmSlider, preset.bpm);
+    updateSlider(UI.scaleSelect, preset.scale);
+    updateSlider(UI.mainOscGainSlider, preset.mainOscGain);
+    updateSlider(UI.mainOscType, preset.mainOscType);
+    updateSlider(UI.mainOscOctave, preset.mainOscOctave);
+    updateSlider(UI.subOscGainSlider, preset.subOscGain);
+    updateSlider(UI.subOscType, preset.subOscType);
+    updateSlider(UI.subOscOctave, preset.subOscOctave);
+    updateSlider(UI.attackSlider, preset.attack);
+    updateSlider(UI.filterCutoffSlider, preset.filterCutoff);
+    updateSlider(UI.filterResonanceSlider, preset.filterResonance);
+    updateSlider(UI.glideSlider, preset.glide);
+    updateSlider(UI.pitchSlider, preset.pitch);
+    updateSlider(UI.delaySlider, preset.delay);
+    updateSlider(UI.delayFeedbackSlider, preset.delayFeedback);
+    updateSlider(UI.reverbSlider, preset.reverb);
+    updateSlider(UI.gridSizeSlider, preset.gridSize);
+
+    // The event handlers will be triggered automatically by the input events
 }
 
 async function shutdownSystem() {
