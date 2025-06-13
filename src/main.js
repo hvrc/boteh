@@ -67,16 +67,16 @@ let heldNotes = null;
 const cellOpacities = new Map();
 
 function handleBPMChange(value) {
-    UI.bpmValue.textContent = value;
+    const bpm = Math.round(parseFloat(value)); // Ensures whole number BPM
+    UI.bpmValue.textContent = bpm;
     if (audioEngine) {
-        const newTempo = parseInt(value);
-        audioEngine.tempo = newTempo;
-        audioEngine.stepInterval = (60 / newTempo) * 1000 / 2;
+        audioEngine.tempo = bpm;
+        audioEngine.stepInterval = (60 / bpm) * 1000 / 2;
     }
 }
 
 function handleDelayChange(value) {
-    const delayAmount = parseInt(value) / 100;
+    const delayAmount = parseInt(value) / 100; // Changes by 0.01
     UI.delayValue.textContent = `${value}%`;
     if (audioEngine) {
         audioEngine.setDelayAmount(delayAmount);
@@ -84,14 +84,15 @@ function handleDelayChange(value) {
 }
 
 function handleDelayFeedbackChange(value) {
+    const feedback = parseInt(value); // Changes by 1%
     UI.delayFeedbackValue.textContent = `${value}%`;
     if (audioEngine) {
-        audioEngine.setDelayFeedback(value);
+        audioEngine.setDelayFeedback(feedback);
     }
 }
 
 function handleVolumeChange(value) {
-    const volume = parseInt(value) / 100;
+    const volume = parseInt(value) / 1000; // Now changes by 0.01 instead of 0.02
     UI.volumeValue.textContent = `${value}%`;
     if (audioEngine) {
         audioEngine.setVolume(volume);
@@ -115,14 +116,15 @@ function handleReleaseChange(value) {
 }
 
 function handleReverbChange(value) {
+    const reverbAmount = parseInt(value); // Changes by 1%
     UI.reverbValue.textContent = `${value}%`;
     if (audioEngine) {
-        audioEngine.setReverb(parseInt(value));
+        audioEngine.setReverb(reverbAmount);
     }
 }
 
 function handleMainOscGainChange(value) {
-    const gain = parseInt(value) / 100;
+    const gain = parseInt(value) / 100; // Now changes by 0.01 instead of 0.02
     UI.mainOscGainValue.textContent = `${value}%`;
     if (audioEngine) {
         audioEngine.setMainOscGain(gain);
@@ -138,7 +140,7 @@ function handleMainOscGainChange(value) {
 }
 
 function handleSubOscGainChange(value) {
-    const gain = parseInt(value) / 100;
+    const gain = parseInt(value) / 100; // Now changes by 0.01 instead of 0.02
     UI.subOscGainValue.textContent = `${value}%`;
     if (audioEngine) {
         audioEngine.setSubOscGain(gain);
@@ -179,19 +181,10 @@ function handleSubOscTypeChange(value) {
 }
 
 function handleGlideChange(value) {
-    const glideTime = parseInt(value) / 1000;
+    const glideTime = parseInt(value); // Changes by 1ms
     UI.glideValue.textContent = `${value}ms`;
-    const isEnabled = parseInt(value) > 0;
     if (audioEngine) {
         audioEngine.setGlideTime(glideTime);
-        if (UI.arpMode.value === "0" && UI.holdMode.value === "1" && heldNotes) {
-            heldNotes.forEach(cell => {
-                audioEngine.stopNote(cell.x, cell.y);
-            });
-            heldNotes.forEach(cell => {
-                audioEngine.playNote(cell.x, cell.y);
-            });
-        }
     }
 }
 
@@ -649,7 +642,7 @@ function handlePitchChange(value) {
 }
 
 function handleFilterCutoffChange(value) {
-    const frequency = parseInt(value);
+    const frequency = Math.round(parseInt(value) / 50) * 50; // Changes in steps of 50Hz
     const displayValue = frequency >= 1000 ? 
         `${(frequency/1000).toFixed(1)}kHz` : 
         `${frequency}Hz`;
@@ -660,7 +653,7 @@ function handleFilterCutoffChange(value) {
 }
 
 function handleFilterResonanceChange(value) {
-    const resonance = parseFloat(value);
+    const resonance = parseInt(value); // Changes by 1 unit
     UI.filterResonanceValue.textContent = resonance.toFixed(1);
     if (audioEngine) {
         audioEngine.setFilterResonance(resonance);
