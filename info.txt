@@ -2,7 +2,3 @@ deploy
 
 gcloud config set project boteh-461905
 gcloud app deploy
-
-Technologies & Frameworks Used: This project uses vanilla JavaScript for the frontend logic, HTML for structure, and CSS for styling. It uses the Web Audio API for sound synthesis and audio effects. The MediaPipe library is used for hand tracking through the webcam. Express.js is used as a simple web server. The project is deployed on Google Cloud Platform (shown by app.yaml). For package management, it uses npm with Node.js version 20 or higher.
-
-What the Project Does: Boteh is a musical instrument you play with your hands in front of your webcam. It shows a grid on screen, and when you move your fingers in view of the camera, it creates circles that make sounds. The pitch of the sounds changes based on where your fingers are on the grid - higher positions make higher notes, lower positions make lower notes. There are many controls to change how it sounds - like volume, echo effects (delay and reverb), different sound types (sine, square, etc.), and speed of notes (BPM). You can also make the notes spread out from where you touch (expand mode) or play in a pattern (arp mode). It's like playing a musical instrument in the air with just your hand movements.

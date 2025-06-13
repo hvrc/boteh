@@ -71,7 +71,7 @@ let heldNotes = null;
 const cellOpacities = new Map();
 
 function handleBPMChange(value) {
-    const bpm = Math.round(parseFloat(value)); // Ensures whole number BPM
+    const bpm = Math.round(parseFloat(value));
     UI.bpmValue.textContent = bpm;
     if (audioEngines.get(currentInstance)) {
         audioEngines.get(currentInstance).tempo = bpm;
@@ -80,7 +80,7 @@ function handleBPMChange(value) {
 }
 
 function handleDelayChange(value) {
-    const delayAmount = parseInt(value) / 100; // Changes by 0.01
+    const delayAmount = parseInt(value) / 100;
     UI.delayValue.textContent = `${value}%`;
     if (audioEngines.get(currentInstance)) {
         audioEngines.get(currentInstance).setDelayAmount(delayAmount);
@@ -88,7 +88,7 @@ function handleDelayChange(value) {
 }
 
 function handleDelayFeedbackChange(value) {
-    const feedback = parseInt(value); // Changes by 1%
+    const feedback = parseInt(value);
     UI.delayFeedbackValue.textContent = `${value}%`;
     if (audioEngines.get(currentInstance)) {
         audioEngines.get(currentInstance).setDelayFeedback(feedback);
@@ -96,7 +96,7 @@ function handleDelayFeedbackChange(value) {
 }
 
 function handleVolumeChange(value) {
-    const volume = parseInt(value) / 1000; // Now changes by 0.01 instead of 0.02
+    const volume = parseInt(value) / 1000;
     UI.volumeValue.textContent = `${value}%`;
     if (audioEngines.get(currentInstance)) {
         audioEngines.get(currentInstance).setVolume(volume);
@@ -120,7 +120,7 @@ function handleReleaseChange(value) {
 }
 
 function handleReverbChange(value) {
-    const reverbAmount = parseInt(value); // Changes by 1%
+    const reverbAmount = parseInt(value);
     UI.reverbValue.textContent = `${value}%`;
     if (audioEngines.get(currentInstance)) {
         audioEngines.get(currentInstance).setReverb(reverbAmount);
@@ -128,7 +128,7 @@ function handleReverbChange(value) {
 }
 
 function handleMainOscGainChange(value) {
-    const gain = parseInt(value) / 100; // Now changes by 0.01 instead of 0.02
+    const gain = parseInt(value) / 100;
     UI.mainOscGainValue.textContent = `${value}%`;
     if (audioEngines.get(currentInstance)) {
         audioEngines.get(currentInstance).setMainOscGain(gain);
@@ -144,7 +144,7 @@ function handleMainOscGainChange(value) {
 }
 
 function handleSubOscGainChange(value) {
-    const gain = parseInt(value) / 100; // Now changes by 0.01 instead of 0.02
+    const gain = parseInt(value) / 100;
     UI.subOscGainValue.textContent = `${value}%`;
     if (audioEngines.get(currentInstance)) {
         audioEngines.get(currentInstance).setSubOscGain(gain);
@@ -185,7 +185,7 @@ function handleSubOscTypeChange(value) {
 }
 
 function handleGlideChange(value) {
-    const glideTime = parseInt(value); // Changes by 1ms
+    const glideTime = parseInt(value);
     UI.glideValue.textContent = `${value}ms`;
     if (audioEngines.get(currentInstance)) {
         audioEngines.get(currentInstance).setGlideTime(glideTime);
@@ -336,7 +336,7 @@ function createInstance(instanceId) {
     if (!audioEngines.has(instanceId)) {
         const engine = new AudioEngine(instanceId);
         audioEngines.set(instanceId, engine);
-        // Set up initial instance settings
+
         engine.applySettings({
             volume: 10,
             bpm: 222,
@@ -364,15 +364,12 @@ function switchToInstance(instanceId) {
     currentInstance = instanceId;
     const previousEngine = activeAudioEngine;
     
-    // Create or get instance
     activeAudioEngine = createInstance(instanceId);
     
-    // If hold mode is off, stop previous instance's notes
     if (UI.holdMode && UI.holdMode.dataset.state === 'off' && previousEngine) {
         previousEngine.stopAllNotes();
     }
 
-    // Update hand detector results handler to use current instance
     if (handDetector) {
         handDetector.onResults = (results) => {
             if (results.multiHandLandmarks) {
@@ -383,11 +380,9 @@ function switchToInstance(instanceId) {
                 const activeCells = handDetector.getActiveCells();
                 drawGrid(ctx, CANVAS_SIZE, CANVAS_SIZE, handDetector.gridSize, activeCells, handDetector, activeAudioEngine);
                 
-                // Use the active audio engine for new notes
                 if (activeAudioEngine) {
                     const newCells = new Set(activeCells.map(cell => `${cell.x},${cell.y}`));
                     
-                    // Start new notes for current instance
                     activeCells.forEach(cell => {
                         const key = `${cell.x},${cell.y}`;
                         if (!lastActiveCells.has(key)) {
@@ -395,7 +390,6 @@ function switchToInstance(instanceId) {
                         }
                     });
                     
-                    // Stop notes that are no longer active
                     Array.from(lastActiveCells).forEach(key => {
                         if (!newCells.has(key)) {
                             const [x, y] = key.split(',').map(Number);
@@ -410,39 +404,30 @@ function switchToInstance(instanceId) {
     }
 }
 
-// Update the event listener for instance/layer slider
 document.getElementById('instanceSlider').addEventListener('input', async function() {
     const newInstanceId = parseInt(this.value);
     document.getElementById('instanceValue').textContent = newInstanceId;
 
-    // If this is a new layer, reset to preset 1
     if (!AudioEngine.initializedLayers.has(newInstanceId)) {
-        // Load preset 1 settings
         const presets = await loadPresets();
         const preset1Settings = presets["1"];
         
-        // Create new audio engine instance with preset 1
         const newEngine = createInstance(newInstanceId);
         newEngine.applySettings(preset1Settings);
         
-        // Reset preset slider to 1
         const presetSlider = document.getElementById('presetSlider');
         presetSlider.value = "1";
         document.getElementById('presetValue').textContent = "1";
         
-        // Mark this layer as initialized
         AudioEngine.initializedLayers.add(newInstanceId);
-        
-        // Store initial settings
         AudioEngine.layerSettings.set(newInstanceId, preset1Settings);
     } else {
-        // Restore previously saved settings for this layer
+
         const savedSettings = AudioEngine.layerSettings.get(newInstanceId);
         if (savedSettings) {
             const engine = createInstance(newInstanceId);
             engine.applySettings(savedSettings);
             
-            // Update preset slider to match saved settings
             if (savedSettings.preset) {
                 const presetSlider = document.getElementById('presetSlider');
                 presetSlider.value = savedSettings.preset.toString();
@@ -454,20 +439,16 @@ document.getElementById('instanceSlider').addEventListener('input', async functi
     switchToInstance(newInstanceId);
 });
 
-// Update preset change handler to store settings per layer
 document.getElementById('presetSlider').addEventListener('input', async function() {
     const preset = this.value;
     document.getElementById('presetValue').textContent = preset;
 
-    // Get the current instance settings
     const currentInstanceId = parseInt(document.getElementById('instanceSlider').value);
     const presets = await loadPresets();
     const presetSettings = presets[preset];
 
-    // Store the preset number with the settings
     presetSettings.preset = parseInt(preset);
 
-    // Apply and store the settings for this layer
     if (audioEngines.get(currentInstanceId)) {
         audioEngines.get(currentInstanceId).applySettings(presetSettings);
         AudioEngine.layerSettings.set(currentInstanceId, presetSettings);
@@ -475,9 +456,8 @@ document.getElementById('presetSlider').addEventListener('input', async function
 });
 
 
-// Initialize first instance at startup
 document.addEventListener('DOMContentLoaded', () => {
-    // ... existing DOMContentLoaded code ...
+    //
     activeAudioEngine = createInstance(1);
 });
 
@@ -735,12 +715,12 @@ document.addEventListener('DOMContentLoaded', () => {
         UI.masterSwitchValue.textContent = newState === 'on' ? 'On' : 'Off';
         
         if (newState === 'on') {
-            initializeApp();        } else {
+            initializeApp();        
+        } else {
             shutdownSystem();
             
-            // Stop recording if active
             if (UI.recordButton && UI.recordButton.getAttribute('data-state') === 'on') {
-                UI.recordButton.click(); // This will trigger the click handler to stop recording
+                UI.recordButton.click();
             }
         }
     });
@@ -789,9 +769,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// Initialize record button
 if (UI.recordButton) {
-    // Initialize the record button text
     const recordButtonValue = document.getElementById('recordButtonValue');
     if (recordButtonValue) {
         recordButtonValue.textContent = 'Off';
@@ -802,14 +780,12 @@ if (UI.recordButton) {
         const currentAudioEngine = audioEngines.get(currentInstance);
         
         if (!isRecording) {
-            // Start recording
             currentAudioEngine?.startRecording();
             UI.recordButton.setAttribute('data-state', 'on');
             if (recordButtonValue) {
                 recordButtonValue.textContent = 'On';
             }
         } else {
-            // Stop recording and export
             currentAudioEngine?.stopRecording();
             UI.recordButton.setAttribute('data-state', 'off');
             if (recordButtonValue) {
@@ -835,7 +811,7 @@ function handlePitchChange(value) {
 }
 
 function handleFilterCutoffChange(value) {
-    const frequency = Math.round(parseInt(value) / 50) * 50; // Changes in steps of 50Hz
+    const frequency = Math.round(parseInt(value) / 50) * 50;
     const displayValue = frequency >= 1000 ? 
         `${(frequency/1000).toFixed(1)}kHz` : 
         `${frequency}Hz`;
@@ -846,7 +822,7 @@ function handleFilterCutoffChange(value) {
 }
 
 function handleFilterResonanceChange(value) {
-    const resonance = parseInt(value); // Changes by 1 unit
+    const resonance = parseInt(value);
     UI.filterResonanceValue.textContent = resonance.toFixed(1);
     if (audioEngines.get(currentInstance)) {
         audioEngines.get(currentInstance).setFilterResonance(resonance);
@@ -867,14 +843,12 @@ async function loadPresets() {
 function applyPreset(preset) {
     if (!preset) return;
 
-    // Update all slider values and their fills
     const updateSlider = (slider, value) => {
         slider.value = value;
         const event = new Event('input');
         slider.dispatchEvent(event);
     };
 
-    // Replace the direct value assignments with the updateSlider function
     updateSlider(UI.volumeSlider, preset.volume);
     updateSlider(UI.bpmSlider, preset.bpm);
     updateSlider(UI.scaleSelect, preset.scale);
@@ -893,8 +867,6 @@ function applyPreset(preset) {
     updateSlider(UI.delayFeedbackSlider, preset.delayFeedback);
     updateSlider(UI.reverbSlider, preset.reverb);
     updateSlider(UI.gridSizeSlider, preset.gridSize);
-
-    // The event handlers will be triggered automatically by the input events
 }
 
 async function shutdownSystem() {

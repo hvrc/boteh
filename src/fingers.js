@@ -133,7 +133,8 @@ export class HandDetector {
   }
   
   drawFingerDots(landmarks) {
-    const fingerTipIndices = [4, 8, 12, 16, 20]; // Thumb, Index, Middle, Ring, Pinky
+    // Thumb, Index, Middle, Ring, Pinky
+    const fingerTipIndices = [4, 8, 12, 16, 20];
     const expandMode = document.getElementById('expandMode').value === "1";
     
     fingerTipIndices.forEach((tipIndex) => {

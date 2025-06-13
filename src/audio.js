@@ -27,42 +27,42 @@ export class AudioEngine {
   static COLORS = {
     1: {
         active: {
-            expanded: 'rgba(0, 255, 128, $opacity)',  // Current bright green
-            normal: 'rgba(0, 200, 100, $opacity)'     // Current dark green
+            expanded: 'rgba(170, 51, 106, $opacity)',   // dark pink
+            normal: 'rgba(149, 53, 83, $opacity)'       // red purple
         },
         inactive: {
-            expanded: 'rgba(0, 128, 255, $opacity)',  // Current bright blue
-            normal: 'rgba(0, 100, 200, $opacity)'     // Current dark blue
+            expanded: 'rgba(224, 176, 255, $opacity)',  // mauve
+            normal: 'rgba(204, 204, 255, $opacity)'     // periwinkle
         }
     },
     2: {
         active: {
-            expanded: 'rgba(255, 128, 0, $opacity)',  // Bright orange
-            normal: 'rgba(200, 100, 0, $opacity)'     // Dark orange
+            expanded: 'rgba(201, 204, 63, $opacity)',  // pear
+            normal: 'rgba(138, 154, 91, $opacity)'     // moss green
         },
         inactive: {
-            expanded: 'rgba(255, 0, 128, $opacity)',  // Bright pink
-            normal: 'rgba(200, 0, 100, $opacity)'     // Dark pink
+            expanded: 'rgba(95, 133, 117, $opacity)',   // eucalyptus
+            normal: 'rgba(175, 225, 175, $opacity)'     // caladon
         }
     },
     3: {
         active: {
-            expanded: 'rgba(128, 0, 255, $opacity)',  // Bright purple
-            normal: 'rgba(100, 0, 200, $opacity)'     // Dark purple
+            expanded: 'rgba(248, 152, 128, $opacity)',  // pink orange
+            normal: 'rgba(255, 192, $opacity)'     // golden yellow
         },
         inactive: {
-            expanded: 'rgba(255, 255, 0, $opacity)',  // Bright yellow
-            normal: 'rgba(200, 200, 0, $opacity)'     // Dark yellow
+            expanded: 'rgba(233, 116, 81, $opacity)',  // burnt sienna
+            normal: 'rgba(255, 172, 28, $opacity)'     // bright orange
         }
     },
     4: {
         active: {
-            expanded: 'rgba(255, 0, 0, $opacity)',    // Bright red
-            normal: 'rgba(200, 0, 0, $opacity)'       // Dark red
+            expanded: 'rgba(65, 105, 225, $opacity)',    // royal blue
+            normal: 'rgba(255, 253, 208, $opacity)'       // cream
         },
         inactive: {
-            expanded: 'rgba(0, 255, 255, $opacity)',  // Bright cyan
-            normal: 'rgba(0, 200, 200, $opacity)'     // Dark cyan
+            expanded: 'rgba(255, 222, 173, $opacity)',  // navajo white
+            normal: 'rgba(245, 245, 220, $opacity)'     // beige
         }
     }
 };
@@ -159,10 +159,9 @@ export class AudioEngine {
     this.compressor.attack.value = 0.003;
     this.compressor.release.value = 0.25;
 
-    // Modify the audio routing chain
     this.filter.connect(this.dryGain);
-    this.filter.connect(this.reverbNode);  // Connect filter directly to reverb
-    this.filter.connect(this.leftDelay);   // And also to delays
+    this.filter.connect(this.reverbNode);
+    this.filter.connect(this.leftDelay);
     this.filter.connect(this.rightDelay);
 
     this.leftDelay.connect(this.leftGain);
@@ -177,7 +176,7 @@ export class AudioEngine {
     
     this.leftPanner.connect(this.dryGain);
     this.rightPanner.connect(this.dryGain);
-    this.leftPanner.connect(this.reverbNode);   // Connect panners to reverb
+    this.leftPanner.connect(this.reverbNode);
     this.rightPanner.connect(this.reverbNode);
     
     this.dryGain.connect(this.mainGainNode);
@@ -218,9 +217,9 @@ export class AudioEngine {
             const noteIndex = (gridSize - 1 - x) % scale.ratios.length;
             
             const frequency = baseFrequency * 
-                            scale.ratios[noteIndex] * 
-                            Math.pow(2, octave);
-            
+                              scale.ratios[noteIndex] * 
+                              Math.pow(2, octave);
+          
             this.frequencies.push({ 
                 x, 
                 y: gridSize - 1 - y, 
@@ -385,30 +384,25 @@ setPitchShift(semitones, smooth = false) {
             const mainBaseFreq = noteData.frequency * Math.pow(2, this.mainOscOctave);
             const subBaseFreq = noteData.frequency * Math.pow(2, this.subOscOctave);
             
-            // Apply pitch shift
             const mainFreq = getPitchedFrequency(mainBaseFreq);
             const subFreq = getPitchedFrequency(subBaseFreq);
             
-            // Smooth transition for all active oscillators
             sound.oscillators[0].frequency.exponentialRampToValueAtTime(mainFreq, now + transitionTime);
             sound.oscillators[1].frequency.exponentialRampToValueAtTime(subFreq, now + transitionTime);
         }
     });
 
-    // Update arpeggiator oscillators if they exist
     if (this.arpOscillators && this.arpOscillators.mainOsc) {
         const activeNote = Array.from(this.activeNotes)[0];
         if (activeNote) {
             const [x, y] = activeNote.split(',').map(Number);
             const noteData = this.frequencies.find(n => n.x === x && n.y === y);
             if (noteData) {
-                // Calculate base frequencies with octave and pitch shift
                 const mainBaseFreq = noteData.frequency * Math.pow(2, this.mainOscOctave);
                 const subBaseFreq = noteData.frequency * Math.pow(2, this.subOscOctave);
                 const mainFreq = getPitchedFrequency(mainBaseFreq);
                 const subFreq = getPitchedFrequency(subBaseFreq);
                 
-                // Smooth transition for arpeggiator oscillators
                 this.arpOscillators.mainOsc.frequency.exponentialRampToValueAtTime(mainFreq, now + transitionTime);
                 this.arpOscillators.subOsc.frequency.exponentialRampToValueAtTime(subFreq, now + transitionTime);
             }
@@ -839,7 +833,6 @@ setFilterResonance(resonance) {
         return AudioEngine.COLORS[this.instanceId];
       }
 
-      // Add method to get all current settings
       getSettings() {
         return {
             volume: this.mainGainNode.gain.value * 100,
@@ -861,7 +854,6 @@ setFilterResonance(resonance) {
         };
     }
 
-    // Add method to apply settings
     applySettings(settings) {
         this.setVolume(settings.volume / 100);
         this.tempo = settings.bpm;

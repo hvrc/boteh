@@ -1,6 +1,6 @@
 body {
   margin: 0;
-  padding: 40px; /* Increased padding around everything */
+  padding: 40px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -12,8 +12,8 @@ body {
 
 .container {
   position: relative;
-  width: min(400px, calc(100vw - 80px)); /* Reduced from 480px */
-  height: min(400px, calc(100vw - 80px)); /* Reduced from 480px */
+  width: min(400px, calc(100vw - 80px));
+  height: min(400px, calc(100vw - 80px));
   margin: 10px auto;
 }
 
@@ -45,20 +45,18 @@ body {
   display: none !important;
 }
 
-/* Default state for controls */
 .controls {
   padding: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  width: min(400px, calc(100vw - 80px)); /* Match container width */
+  width: min(400px, calc(100vw - 80px));
   box-sizing: border-box;
   opacity: 1;
   margin: 0 auto;
 }
 
-/* Common disabled state styling for all controls */
 .controls.disabled .slider-container:not(.master-control),
 .controls.disabled .button-container:not(.master-control) {
     opacity: 0.6;
@@ -66,13 +64,11 @@ body {
     transition: opacity 0.3s ease;
 }
 
-/* Ensure master control stays active */
 .master-control {
     opacity: 1 !important;
     pointer-events: auto !important;
 }
 
-/* Disabled state text styling */
 .controls.disabled .slider-container:not(.master-control) label,
 .controls.disabled .slider-container:not(.master-control) .value-display,
 .controls.disabled .button-container:not(.master-control) label,
@@ -81,7 +77,6 @@ body {
     transition: opacity 0.3s ease;
 }
 
-/* Disabled state button styling */
 .controls.disabled .button-container:not(.master-control) .toggle-button {
     opacity: 0.6;
     pointer-events: none;
@@ -89,7 +84,6 @@ body {
     transition: opacity 0.3s ease;
 }
 
-/* Master control exceptions */
 .master-control label,
 .master-control .value-display,
 .master-control .toggle-button {
@@ -100,17 +94,16 @@ body {
     cursor: pointer !important;
 }
 
-/* Clear any other opacity overrides */
 .controls.disabled *:not(.master-control *) {
     transition: opacity 0.3s ease;
 }
 
 .slider-container {
   position: relative;
-  width: 50px;  /* Reduced from 60px */
-  height: 50px; /* Reduced from 60px */
-  margin: 6px;  /* Reduced from 8px */
-  overflow: visible; /* Changed from hidden to show text */
+  width: 50px;
+  height: 50px;
+  margin: 6px;
+  overflow: visible;
   user-select: none;
   flex: 0 0 auto;
   box-sizing: border-box;
@@ -119,12 +112,12 @@ body {
 .slider-container label,
 .button-container label {
   position: absolute;
-  top: 4px; /* Moved up from 10px */
+  top: 4px;
   left: 0;
   width: 100%;
   text-align: center;
   color: #000;
-  font-size: 12px; /* Reduced from 14px */
+  font-size: 12px;
   text-transform: lowercase;
   font-family: monospace;
   z-index: 2;
@@ -150,14 +143,13 @@ body {
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 8px; /* Reduced from 10px */
-  padding: 8px; /* Reduced from 10px */
-  width: min(400px, calc(100vw - 80px)); /* Match container width */
+  gap: 8px;
+  padding: 8px;
+  width: min(400px, calc(100vw - 80px));
   margin: 0 auto;
   box-sizing: border-box;
 }
 
-/* Toggle switch styling */
 .toggle-switch {
   position: relative;
   width: 60px;
@@ -202,16 +194,15 @@ input:checked + .toggle-slider:before {
   transform: translateX(36px);
 }
 
-/* Value display for sliders */
 .value-display, 
 .slider-container span {
     position: absolute;
-    bottom: 4px;     /* Adjusted for smaller container */
+    bottom: 4px;
     left: 0;
     width: 100%;
     text-align: center;
     color: #000;
-    font-size: 10px; /* Reduced from 12px */
+    font-size: 10px;
     font-family: monospace;
     z-index: 2;
     pointer-events: none;
@@ -219,7 +210,6 @@ input:checked + .toggle-slider:before {
     text-transform: lowercase;
 }
 
-/* Update range input styling */
 input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
@@ -231,13 +221,12 @@ input[type="range"] {
     cursor: pointer;
     position: relative;
     border: 1px solid #000;
-    overflow: hidden; /* Add this to contain the fill */
+    overflow: hidden;
 }
 
-/* Update track styling */
 input[type="range"]::-webkit-slider-runnable-track {
     width: 100%;
-    height: 50px; /* Match the input height */
+    height: 50px;
     -webkit-appearance: none;
     background: linear-gradient(to right, #CCCCFF var(--value-percent, 0%), transparent 0%);
     border: none;
@@ -245,13 +234,12 @@ input[type="range"]::-webkit-slider-runnable-track {
 
 input[type="range"]::-moz-range-track {
     width: 100%;
-    height: 50px; /* Match the input height */
+    height: 50px;
     appearance: none;
     background: linear-gradient(to right, #CCCCFF var(--value-percent, 0%), transparent 0%);
     border: none;
 }
 
-/* Hide default thumb */
 input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
@@ -268,22 +256,20 @@ input[type="range"]::-moz-range-thumb {
     border: none;
 }
 
-/* Remove the previous ::before pseudo-element */
 .container canvas {
-  background-color: #fff;  /* Change from #1a1a1a to white */
-  border: 1px solid #000; /* Add black border */
+  background-color: #fff;
+  border: 1px solid #000;
 }
 
 #webcam.hidden {
   display: none;
 }
 
-/* Update button styling */
 .button-container {
     position: relative;
-    width: 50px;  /* Reduced from 60px */
-    height: 50px; /* Reduced from 60px */
-    margin: 6px;  /* Reduced from 8px */
+    width: 50px;
+    height: 50px;
+    margin: 6px;
     user-select: none;
     flex: 0 0 auto;
     box-sizing: border-box;
@@ -303,17 +289,14 @@ input[type="range"]::-moz-range-thumb {
     background: #CCCCFF;
 }
 
-/* Fine-tune record button position */
 #recordButton {
     margin-left: 1px;
 }
 
-/* Add specific styling for the power button */
 .master-control .toggle-button {
     border: 1px solid #000;
 }
 
-/* Update the disabled state styling for button containers */
 .controls.disabled .button-container:not(.master-control) {
     opacity: 0.6;
     pointer-events: none;
@@ -322,34 +305,27 @@ input[type="range"]::-moz-range-thumb {
 .controls.disabled .button-container:not(.master-control) label,
 .controls.disabled .button-container:not(.master-control) .value-display {
     opacity: 0.6;
-    /* color: #888; */
 }
 
-/* Update disabled state styling for all controls */
 .controls.disabled .slider-container:not(.master-control),
 .controls.disabled .button-container:not(.master-control) {
     opacity: 0.6;
     pointer-events: none;
 }
 
-/* Update text colors for disabled state */
 .controls.disabled .slider-container:not(.master-control) label,
 .controls.disabled .slider-container:not(.master-control) .value-display,
 .controls.disabled .button-container:not(.master-control) label,
 .controls.disabled .button-container:not(.master-control) .value-display {
     opacity: 0.6;
-    /* color: #888; */
 }
 
-/* Update button specific disabled state */
 .controls.disabled .button-container:not(.master-control) .toggle-button {
     opacity: 0.6;
     pointer-events: none;
     cursor: default;
-    /* border-color: #888; */
 }
 
-/* Ensure master switch stays active */
 .master-control label,
 .master-control .value-display,
 .master-control .toggle-button {
