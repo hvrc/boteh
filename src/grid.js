@@ -49,15 +49,16 @@ export function drawGrid(ctx, width, height, gridSize, activeCells, handDetector
             const isExpanded = handDetector && handDetector.expandedCells.has(key);
             const isPlaying = playingNotes.has(key);
             
+            const colors = audioEngine.getColors();
             let color;
             if (isPlaying) {
                 color = isExpanded ? 
-                    `rgba(0, 255, 128, ${state.opacity})` :   // Bright green
-                    `rgba(0, 200, 100, ${state.opacity})`;    // Darker green
+                    colors.active.expanded.replace('$opacity', state.opacity) :
+                    colors.active.normal.replace('$opacity', state.opacity);
             } else {
                 color = isExpanded ? 
-                    `rgba(0, 128, 255, ${state.opacity})` :   // Bright blue
-                    `rgba(0, 100, 200, ${state.opacity})`;    // Darker blue
+                    colors.inactive.expanded.replace('$opacity', state.opacity) :
+                    colors.inactive.normal.replace('$opacity', state.opacity);
             }
             
             ctx.fillStyle = color;

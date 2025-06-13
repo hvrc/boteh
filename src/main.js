@@ -58,10 +58,14 @@ const UI = {
     gridSizeValue: document.getElementById('gridSizeValue'),
     presetSlider: document.getElementById('presetSlider'),
     presetValue: document.getElementById('presetValue'),
+    instanceSlider: document.getElementById('instanceSlider'),
+    instanceValue: document.getElementById('instanceValue'),
 };
 
 let lastActiveCells = new Set();
-let audioEngine = null;
+let audioEngines = new Map();
+let activeAudioEngine = null;
+let currentInstance = 1;
 let handDetector = null;
 let heldNotes = null;
 const cellOpacities = new Map();
@@ -69,71 +73,71 @@ const cellOpacities = new Map();
 function handleBPMChange(value) {
     const bpm = Math.round(parseFloat(value)); // Ensures whole number BPM
     UI.bpmValue.textContent = bpm;
-    if (audioEngine) {
-        audioEngine.tempo = bpm;
-        audioEngine.stepInterval = (60 / bpm) * 1000 / 2;
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).tempo = bpm;
+        audioEngines.get(currentInstance).stepInterval = (60 / bpm) * 1000 / 2;
     }
 }
 
 function handleDelayChange(value) {
     const delayAmount = parseInt(value) / 100; // Changes by 0.01
     UI.delayValue.textContent = `${value}%`;
-    if (audioEngine) {
-        audioEngine.setDelayAmount(delayAmount);
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).setDelayAmount(delayAmount);
     }
 }
 
 function handleDelayFeedbackChange(value) {
     const feedback = parseInt(value); // Changes by 1%
     UI.delayFeedbackValue.textContent = `${value}%`;
-    if (audioEngine) {
-        audioEngine.setDelayFeedback(feedback);
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).setDelayFeedback(feedback);
     }
 }
 
 function handleVolumeChange(value) {
     const volume = parseInt(value) / 1000; // Now changes by 0.01 instead of 0.02
     UI.volumeValue.textContent = `${value}%`;
-    if (audioEngine) {
-        audioEngine.setVolume(volume);
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).setVolume(volume);
     }
 }
 
 function handleAttackChange(value) {
     const attack = parseInt(value) / 1000; 
     UI.attackValue.textContent = `${attack.toFixed(3)}s`;
-    if (audioEngine) {
-        audioEngine.setAttack(attack);
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).setAttack(attack);
     }
 }
 
 function handleReleaseChange(value) {
     const release = parseInt(value) / 1000;
     UI.releaseValue.textContent = `${release.toFixed(3)}s`;
-    if (audioEngine) {
-        audioEngine.setRelease(release);
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).setRelease(release);
     }
 }
 
 function handleReverbChange(value) {
     const reverbAmount = parseInt(value); // Changes by 1%
     UI.reverbValue.textContent = `${value}%`;
-    if (audioEngine) {
-        audioEngine.setReverb(reverbAmount);
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).setReverb(reverbAmount);
     }
 }
 
 function handleMainOscGainChange(value) {
     const gain = parseInt(value) / 100; // Now changes by 0.01 instead of 0.02
     UI.mainOscGainValue.textContent = `${value}%`;
-    if (audioEngine) {
-        audioEngine.setMainOscGain(gain);
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).setMainOscGain(gain);
         if (UI.arpMode.value === "0" && UI.holdMode.value === "1" && heldNotes) {
             heldNotes.forEach(cell => {
-                audioEngine.stopNote(cell.x, cell.y);
+                audioEngines.get(currentInstance).stopNote(cell.x, cell.y);
             });
             heldNotes.forEach(cell => {
-                audioEngine.playNote(cell.x, cell.y);
+                audioEngines.get(currentInstance).playNote(cell.x, cell.y);
             });
         }
     }
@@ -142,14 +146,14 @@ function handleMainOscGainChange(value) {
 function handleSubOscGainChange(value) {
     const gain = parseInt(value) / 100; // Now changes by 0.01 instead of 0.02
     UI.subOscGainValue.textContent = `${value}%`;
-    if (audioEngine) {
-        audioEngine.setSubOscGain(gain);
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).setSubOscGain(gain);
         if (UI.arpMode.value === "0" && UI.holdMode.value === "1" && heldNotes) {
             heldNotes.forEach(cell => {
-                audioEngine.stopNote(cell.x, cell.y);
+                audioEngines.get(currentInstance).stopNote(cell.x, cell.y);
             });
             heldNotes.forEach(cell => {
-                audioEngine.playNote(cell.x, cell.y);
+                audioEngines.get(currentInstance).playNote(cell.x, cell.y);
             });
         }
     }
@@ -159,48 +163,48 @@ function handleScaleChange(value) {
     const index = parseInt(value);
     const scaleName = SCALES[index];
     UI.scaleValue.textContent = scaleName.charAt(0).toUpperCase() + scaleName.slice(1);
-    if (audioEngine) {
-        audioEngine.changeScale(scaleName);
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).changeScale(scaleName);
     }
 }
 
 function handleMainOscTypeChange(value) {
     const type = WAVE_TYPES[value];
     UI.mainOscTypeValue.textContent = type.charAt(0).toUpperCase() + type.slice(1);
-    if (audioEngine) {
-        audioEngine.setMainOscType(type);
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).setMainOscType(type);
     }
 }
 
 function handleSubOscTypeChange(value) {
     const type = WAVE_TYPES[value];
     UI.subOscTypeValue.textContent = type.charAt(0).toUpperCase() + type.slice(1);
-    if (audioEngine) {
-        audioEngine.setSubOscType(type);
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).setSubOscType(type);
     }
 }
 
 function handleGlideChange(value) {
     const glideTime = parseInt(value); // Changes by 1ms
     UI.glideValue.textContent = `${value}ms`;
-    if (audioEngine) {
-        audioEngine.setGlideTime(glideTime);
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).setGlideTime(glideTime);
     }
 }
 
 function handleMainOscOctaveChange(value) {
     const octave = parseInt(value);
     UI.mainOscOctaveValue.textContent = octave;
-    if (audioEngine) {
-        audioEngine.setMainOscOctave(octave);
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).setMainOscOctave(octave);
     }
 }
 
 function handleSubOscOctaveChange(value) {
     const octave = parseInt(value);
     UI.subOscOctaveValue.textContent = octave;
-    if (audioEngine) {
-        audioEngine.setSubOscOctave(octave);
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).setSubOscOctave(octave);
     }
 }
 
@@ -213,7 +217,7 @@ function handleExpandModeChange(value) {
         if (!isEnabled) {
             handDetector.expandedCells.clear();
             
-            if (audioEngine) {
+            if (audioEngines.get(currentInstance)) {
                 if (UI.holdMode.value === "1" && heldNotes) {
                     heldNotes = heldNotes.filter(cell => !handDetector.expandedCells.has(`${cell.x},${cell.y}`));
                 }
@@ -224,15 +228,15 @@ function handleExpandModeChange(value) {
                 [...handDetector.expandedCells].forEach(cellKey => {
                     if (!activeCellKeys.has(cellKey)) {
                         const [x, y] = cellKey.split(',').map(Number);
-                        audioEngine.stopNote(x, y);
+                        audioEngines.get(currentInstance).stopNote(x, y);
                     }
                 });
                 
                 if (UI.arpMode.value === "1") {
                     if (UI.holdMode.value === "1" && heldNotes) {
-                        audioEngine.playArpeggio(heldNotes);
+                        audioEngines.get(currentInstance).playArpeggio(heldNotes);
                     } else {
-                        audioEngine.playArpeggio(activeCells);
+                        audioEngines.get(currentInstance).playArpeggio(activeCells);
                     }
                 }
             }
@@ -249,28 +253,28 @@ function handleHoldModeChange(value) {
         const activeCells = handDetector.getActiveCells();
         heldNotes = [...activeCells]; 
         
-        if (audioEngine && UI.arpMode.value === "1" && heldNotes.length > 0) {
-            audioEngine.playArpeggio(heldNotes);
+        if (audioEngines.get(currentInstance) && UI.arpMode.value === "1" && heldNotes.length > 0) {
+            audioEngines.get(currentInstance).playArpeggio(heldNotes);
         }
     } else {
-        if (audioEngine) {
+        if (audioEngines.get(currentInstance)) {
             if (UI.arpMode.value === "1") {
-                audioEngine.stopArpeggio();
+                audioEngines.get(currentInstance).stopArpeggio();
             } else {
                 heldNotes?.forEach(cell => {
-                    audioEngine.stopNote(cell.x, cell.y);
+                    audioEngines.get(currentInstance).stopNote(cell.x, cell.y);
                 });
             }
         }
         heldNotes = null;
         
         const activeCells = handDetector.getActiveCells();
-        if (audioEngine && activeCells.length > 0) {
+        if (audioEngines.get(currentInstance) && activeCells.length > 0) {
             if (UI.arpMode.value === "1") {
-                audioEngine.playArpeggio(activeCells);
+                audioEngines.get(currentInstance).playArpeggio(activeCells);
             } else {
                 activeCells.forEach(cell => {
-                    audioEngine.playNote(cell.x, cell.y);
+                    audioEngines.get(currentInstance).playNote(cell.x, cell.y);
                 });
             }
         }
@@ -282,21 +286,21 @@ function handleArpModeChange(value) {
     UI.arpModeValue.textContent = isArpMode ? 'On' : 'Off';
     UI.arpMode.dataset.state = isArpMode ? 'on' : 'off';
     
-    if (audioEngine) {
-        audioEngine.stopArpeggio();
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).stopArpeggio();
         
-        if (audioEngine.oscillators.size > 0) {
-            const currentlyActive = Array.from(audioEngine.oscillators.keys());
+        if (audioEngines.get(currentInstance).oscillators.size > 0) {
+            const currentlyActive = Array.from(audioEngines.get(currentInstance).oscillators.keys());
             currentlyActive.forEach(key => {
                 const [x, y] = key.split(',').map(Number);
-                audioEngine.stopNote(x, y);
+                audioEngines.get(currentInstance).stopNote(x, y);
             });
         }
 
-        audioEngine.oscillators.clear();
+        audioEngines.get(currentInstance).oscillators.clear();
         
-        audioEngine.activeNotes.clear();
-        audioEngine.lastNotePlayed = null;
+        audioEngines.get(currentInstance).activeNotes.clear();
+        audioEngines.get(currentInstance).lastNotePlayed = null;
 
         setTimeout(() => {
             const activeCells = UI.holdMode.value === "1" && heldNotes ? 
@@ -305,10 +309,10 @@ function handleArpModeChange(value) {
 
             if (activeCells && activeCells.length > 0) {
                 if (isArpMode) {
-                    audioEngine.playArpeggio(activeCells);
+                    audioEngines.get(currentInstance).playArpeggio(activeCells);
                 } else {
                     activeCells.forEach(cell => {
-                        audioEngine.playNote(cell.x, cell.y);
+                        audioEngines.get(currentInstance).playNote(cell.x, cell.y);
                     });
                 }
             }
@@ -328,6 +332,155 @@ function validateUIElements() {
     }
 }
 
+function createInstance(instanceId) {
+    if (!audioEngines.has(instanceId)) {
+        const engine = new AudioEngine(instanceId);
+        audioEngines.set(instanceId, engine);
+        // Set up initial instance settings
+        engine.applySettings({
+            volume: 10,
+            bpm: 222,
+            scale: 0,
+            mainOscGain: 50,
+            mainOscType: 0,
+            mainOscOctave: 0,
+            subOscGain: 20,
+            subOscType: 0,
+            subOscOctave: -2,
+            attack: 2,
+            filterCutoff: 2000,
+            filterResonance: 0,
+            glide: 0,
+            delay: 30,
+            delayFeedback: 75,
+            reverb: 30
+        });
+        return engine;
+    }
+    return audioEngines.get(instanceId);
+}
+
+function switchToInstance(instanceId) {
+    currentInstance = instanceId;
+    const previousEngine = activeAudioEngine;
+    
+    // Create or get instance
+    activeAudioEngine = createInstance(instanceId);
+    
+    // If hold mode is off, stop previous instance's notes
+    if (UI.holdMode && UI.holdMode.dataset.state === 'off' && previousEngine) {
+        previousEngine.stopAllNotes();
+    }
+
+    // Update hand detector results handler to use current instance
+    if (handDetector) {
+        handDetector.onResults = (results) => {
+            if (results.multiHandLandmarks) {
+                results.multiHandLandmarks.forEach(landmarks => {
+                    handDetector.drawFingerDots(landmarks);
+                });
+                
+                const activeCells = handDetector.getActiveCells();
+                drawGrid(ctx, CANVAS_SIZE, CANVAS_SIZE, handDetector.gridSize, activeCells, handDetector, activeAudioEngine);
+                
+                // Use the active audio engine for new notes
+                if (activeAudioEngine) {
+                    const newCells = new Set(activeCells.map(cell => `${cell.x},${cell.y}`));
+                    
+                    // Start new notes for current instance
+                    activeCells.forEach(cell => {
+                        const key = `${cell.x},${cell.y}`;
+                        if (!lastActiveCells.has(key)) {
+                            activeAudioEngine.playNote(cell.x, cell.y);
+                        }
+                    });
+                    
+                    // Stop notes that are no longer active
+                    Array.from(lastActiveCells).forEach(key => {
+                        if (!newCells.has(key)) {
+                            const [x, y] = key.split(',').map(Number);
+                            activeAudioEngine.stopNote(x, y);
+                        }
+                    });
+                    
+                    lastActiveCells = newCells;
+                }
+            }
+        };
+    }
+}
+
+// Update the event listener for instance/layer slider
+document.getElementById('instanceSlider').addEventListener('input', async function() {
+    const newInstanceId = parseInt(this.value);
+    document.getElementById('instanceValue').textContent = newInstanceId;
+
+    // If this is a new layer, reset to preset 1
+    if (!AudioEngine.initializedLayers.has(newInstanceId)) {
+        // Load preset 1 settings
+        const presets = await loadPresets();
+        const preset1Settings = presets["1"];
+        
+        // Create new audio engine instance with preset 1
+        const newEngine = createInstance(newInstanceId);
+        newEngine.applySettings(preset1Settings);
+        
+        // Reset preset slider to 1
+        const presetSlider = document.getElementById('presetSlider');
+        presetSlider.value = "1";
+        document.getElementById('presetValue').textContent = "1";
+        
+        // Mark this layer as initialized
+        AudioEngine.initializedLayers.add(newInstanceId);
+        
+        // Store initial settings
+        AudioEngine.layerSettings.set(newInstanceId, preset1Settings);
+    } else {
+        // Restore previously saved settings for this layer
+        const savedSettings = AudioEngine.layerSettings.get(newInstanceId);
+        if (savedSettings) {
+            const engine = createInstance(newInstanceId);
+            engine.applySettings(savedSettings);
+            
+            // Update preset slider to match saved settings
+            if (savedSettings.preset) {
+                const presetSlider = document.getElementById('presetSlider');
+                presetSlider.value = savedSettings.preset.toString();
+                document.getElementById('presetValue').textContent = savedSettings.preset.toString();
+            }
+        }
+    }
+
+    switchToInstance(newInstanceId);
+});
+
+// Update preset change handler to store settings per layer
+document.getElementById('presetSlider').addEventListener('input', async function() {
+    const preset = this.value;
+    document.getElementById('presetValue').textContent = preset;
+
+    // Get the current instance settings
+    const currentInstanceId = parseInt(document.getElementById('instanceSlider').value);
+    const presets = await loadPresets();
+    const presetSettings = presets[preset];
+
+    // Store the preset number with the settings
+    presetSettings.preset = parseInt(preset);
+
+    // Apply and store the settings for this layer
+    if (audioEngines.get(currentInstanceId)) {
+        audioEngines.get(currentInstanceId).applySettings(presetSettings);
+        AudioEngine.layerSettings.set(currentInstanceId, presetSettings);
+    }
+});
+
+
+// Initialize first instance at startup
+document.addEventListener('DOMContentLoaded', () => {
+    // ... existing DOMContentLoaded code ...
+    activeAudioEngine = createInstance(1);
+});
+
 async function initializeApp() {
     try {
         validateUIElements();
@@ -335,14 +488,14 @@ async function initializeApp() {
         UI.video.classList.remove('hidden');
         UI.controls.classList.remove('disabled');
 
-        audioEngine = new AudioEngine();
+        audioEngines.set(1, new AudioEngine());
         
         handDetector = new HandDetector(UI.video, UI.canvas);
         
-        UI.bpmSlider.value = audioEngine.tempo;
-        UI.bpmValue.textContent = audioEngine.tempo;
+        UI.bpmSlider.value = audioEngines.get(currentInstance).tempo;
+        UI.bpmValue.textContent = audioEngines.get(currentInstance).tempo;
         
-        UI.delaySlider.value = audioEngine.delayAmount * 100;
+        UI.delaySlider.value = audioEngines.get(currentInstance).delayAmount * 100;
         UI.delayValue.textContent = `${UI.delaySlider.value}%`;
         
         UI.expandMode.dataset.state = 'off';
@@ -369,10 +522,10 @@ async function initializeApp() {
         UI.holdMode.value = "0";
         UI.holdModeValue.textContent = 'Off';
 
-        UI.mainOscOctave.value = audioEngine.mainOscOctave;
-        UI.mainOscOctaveValue.textContent = audioEngine.mainOscOctave;
-        UI.subOscOctave.value = audioEngine.subOscOctave;
-        UI.subOscOctaveValue.textContent = audioEngine.subOscOctave;
+        UI.mainOscOctave.value = audioEngines.get(currentInstance).mainOscOctave;
+        UI.mainOscOctaveValue.textContent = audioEngines.get(currentInstance).mainOscOctave;
+        UI.subOscOctave.value = audioEngines.get(currentInstance).subOscOctave;
+        UI.subOscOctaveValue.textContent = audioEngines.get(currentInstance).subOscOctave;
 
         UI.glideSlider.value = 0;
         UI.glideValue.textContent = '0ms';
@@ -396,8 +549,8 @@ async function initializeApp() {
         UI.arpMode.addEventListener('input', (e) => handleArpModeChange(e.target.value));
 
         UI.scaleSelect.addEventListener('change', (e) => {
-            if (audioEngine) {
-                audioEngine.changeScale(e.target.value);
+            if (audioEngines.get(currentInstance)) {
+                audioEngines.get(currentInstance).changeScale(e.target.value);
             }
         });
 
@@ -496,7 +649,7 @@ async function initializeApp() {
                 HandDetector.GRID_SIZE, 
                 cellsToDraw, 
                 handDetector,
-                audioEngine  
+                audioEngines.get(currentInstance)  
             );
             
             if (UI.holdMode.value === "0") {
@@ -504,36 +657,36 @@ async function initializeApp() {
                 
                 if (JSON.stringify([...currentActiveCellsSet]) !== JSON.stringify([...lastActiveCells])) {
                     if (currentActiveCellsSet.size === 0) {
-                        if (audioEngine) {
-                            audioEngine.stopArpeggio();
-                            Array.from(audioEngine.oscillators.keys()).forEach(key => {
+                        if (audioEngines.get(currentInstance)) {
+                            audioEngines.get(currentInstance).stopArpeggio();
+                            Array.from(audioEngines.get(currentInstance).oscillators.keys()).forEach(key => {
                                 const [x, y] = key.split(',').map(Number);
-                                audioEngine.stopNote(x, y);
+                                audioEngines.get(currentInstance).stopNote(x, y);
                             });
                             
-                            audioEngine.oscillators.clear(); 
+                            audioEngines.get(currentInstance).oscillators.clear(); 
                         }
                     } else {
                         if (UI.arpMode.value === "0") {
                             [...lastActiveCells].forEach(cellKey => {
                                 if (!currentActiveCellsSet.has(cellKey)) {
                                     const [x, y] = cellKey.split(',').map(Number);
-                                    audioEngine.stopNote(x, y);
+                                    audioEngines.get(currentInstance).stopNote(x, y);
                                 }
                             });
 
-                            Array.from(audioEngine.oscillators.keys()).forEach(key => {
+                            Array.from(audioEngines.get(currentInstance).oscillators.keys()).forEach(key => {
                                 if (!currentActiveCellsSet.has(key)) {
                                     const [x, y] = key.split(',').map(Number);
-                                    audioEngine.stopNote(x, y);
+                                    audioEngines.get(currentInstance).stopNote(x, y);
                                 }
                             });
 
                             activeCells.forEach(cell => {
-                                audioEngine.playNote(cell.x, cell.y);
+                                audioEngines.get(currentInstance).playNote(cell.x, cell.y);
                             });
                         } else if (UI.arpMode.value === "1") {
-                            audioEngine.playArpeggio(activeCells);
+                            audioEngines.get(currentInstance).playArpeggio(activeCells);
                         }
                     }
                     
@@ -585,6 +738,11 @@ document.addEventListener('DOMContentLoaded', () => {
             initializeApp();
         } else {
             shutdownSystem();
+            
+            // Stop recording if active
+            // if (UI.recordButton.getAttribute('data-state') === 'on') {
+            //     UI.recordButton.click(); // This will trigger the click handler to stop recording
+            // }
         }
     });
 
@@ -624,7 +782,31 @@ document.addEventListener('DOMContentLoaded', () => {
             applyPreset(presets[presetNumber]);
         }
     });
+
+    UI.instanceSlider.addEventListener('input', (e) => {
+        const instanceId = parseInt(e.target.value);
+        UI.instanceValue.textContent = instanceId;
+        switchToInstance(instanceId);
+    });
 });
+
+// Initialize record button
+const recordButton = document.getElementById('recordButton');
+if (recordButton) {
+    recordButton.addEventListener('click', () => {
+        const isRecording = recordButton.getAttribute('data-state') === 'on';
+        
+        if (!isRecording) {
+            // Start recording
+            audioEngine?.startRecording();
+            recordButton.setAttribute('data-state', 'on');
+        } else {
+            // Stop recording and export
+            audioEngine?.stopRecording();
+            recordButton.setAttribute('data-state', 'off');
+        }
+    });
+}
 
 function handlePitchChange(value) {
     const cents = parseInt(value);
@@ -636,8 +818,8 @@ function handlePitchChange(value) {
     
     UI.pitchValue.textContent = displayText;
     
-    if (audioEngine) {
-        audioEngine.setPitchShift(semitones);
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).setPitchShift(semitones);
     }
 }
 
@@ -647,16 +829,16 @@ function handleFilterCutoffChange(value) {
         `${(frequency/1000).toFixed(1)}kHz` : 
         `${frequency}Hz`;
     UI.filterCutoffValue.textContent = displayValue;
-    if (audioEngine) {
-        audioEngine.setFilterCutoff(frequency);
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).setFilterCutoff(frequency);
     }
 }
 
 function handleFilterResonanceChange(value) {
     const resonance = parseInt(value); // Changes by 1 unit
     UI.filterResonanceValue.textContent = resonance.toFixed(1);
-    if (audioEngine) {
-        audioEngine.setFilterResonance(resonance);
+    if (audioEngines.get(currentInstance)) {
+        audioEngines.get(currentInstance).setFilterResonance(resonance);
     }
 }
 
@@ -706,19 +888,19 @@ function applyPreset(preset) {
 
 async function shutdownSystem() {
     try {
-        if (audioEngine) {
-            audioEngine.stopArpeggio();
+        if (audioEngines.get(currentInstance)) {
+            audioEngines.get(currentInstance).stopArpeggio();
             if (heldNotes) {
                 heldNotes?.forEach(cell => {
-                    audioEngine.stopNote(cell.x, cell.y);
+                    audioEngines.get(currentInstance).stopNote(cell.x, cell.y);
                 });
             }
             if (handDetector) {
                 handDetector.getActiveCells().forEach(cell => {
-                    audioEngine.stopNote(cell.x, cell.y);
+                    audioEngines.get(currentInstance).stopNote(cell.x, cell.y);
                 });
             }
-            audioEngine = null;
+            audioEngines.get(currentInstance) = null;
         }
 
         if (handDetector) {
@@ -771,21 +953,21 @@ function handleGridSizeChange(value) {
     if (handDetector) {
         handDetector.setGridSize(size);
         
-        if (audioEngine) {
-            audioEngine.stopArpeggio();
+        if (audioEngines.get(currentInstance)) {
+            audioEngines.get(currentInstance).stopArpeggio();
             if (heldNotes) {
                 heldNotes.forEach(cell => {
-                    audioEngine.stopNote(cell.x, cell.y);
+                    audioEngines.get(currentInstance).stopNote(cell.x, cell.y);
                 });
             }
             handDetector.getActiveCells().forEach(cell => {
-                audioEngine.stopNote(cell.x, cell.y);
+                audioEngines.get(currentInstance).stopNote(cell.x, cell.y);
             });
             
             heldNotes = null;
             lastActiveCells = new Set();
             
-            audioEngine.setupScales(size);
+            audioEngines.get(currentInstance).setupScales(size);
         }
     }
     

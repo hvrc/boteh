@@ -317,6 +317,18 @@ input[type="range"]::-moz-range-thumb {
     background: #CCCCFF;
 }
 
+/* Add specific styling for recording state */
+#recordButton[data-state="on"] {
+    background: #ffcccc;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(255, 0, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+}
+
 /* Add specific styling for the power button */
 .master-control .toggle-button {
     border: 1px solid #000;

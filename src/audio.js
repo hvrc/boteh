@@ -24,7 +24,51 @@ export class AudioEngine {
     }
   };
 
-  constructor() {
+  static COLORS = {
+    1: {
+        active: {
+            expanded: 'rgba(0, 255, 128, $opacity)',  // Current bright green
+            normal: 'rgba(0, 200, 100, $opacity)'     // Current dark green
+        },
+        inactive: {
+            expanded: 'rgba(0, 128, 255, $opacity)',  // Current bright blue
+            normal: 'rgba(0, 100, 200, $opacity)'     // Current dark blue
+        }
+    },
+    2: {
+        active: {
+            expanded: 'rgba(255, 128, 0, $opacity)',  // Bright orange
+            normal: 'rgba(200, 100, 0, $opacity)'     // Dark orange
+        },
+        inactive: {
+            expanded: 'rgba(255, 0, 128, $opacity)',  // Bright pink
+            normal: 'rgba(200, 0, 100, $opacity)'     // Dark pink
+        }
+    },
+    3: {
+        active: {
+            expanded: 'rgba(128, 0, 255, $opacity)',  // Bright purple
+            normal: 'rgba(100, 0, 200, $opacity)'     // Dark purple
+        },
+        inactive: {
+            expanded: 'rgba(255, 255, 0, $opacity)',  // Bright yellow
+            normal: 'rgba(200, 200, 0, $opacity)'     // Dark yellow
+        }
+    },
+    4: {
+        active: {
+            expanded: 'rgba(255, 0, 0, $opacity)',    // Bright red
+            normal: 'rgba(200, 0, 0, $opacity)'       // Dark red
+        },
+        inactive: {
+            expanded: 'rgba(0, 255, 255, $opacity)',  // Bright cyan
+            normal: 'rgba(0, 200, 200, $opacity)'     // Dark cyan
+        }
+    }
+};
+
+  constructor(instanceId = 1) {
+    this.instanceId = instanceId;
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
     
     if (this.audioContext.state === 'suspended') {
@@ -66,6 +110,7 @@ export class AudioEngine {
     this.setupEffects();
     this.setupScales();
     this.setupOscillators();
+    this.setupRecording();
     
     this.scheduler();
   }
@@ -789,4 +834,86 @@ setFilterResonance(resonance) {
           }
         }, transitionTime * 1000);
       }
+
+      getColors() {
+        return AudioEngine.COLORS[this.instanceId];
+      }
+
+      // Add method to get all current settings
+      getSettings() {
+        return {
+            volume: this.mainGainNode.gain.value * 100,
+            bpm: this.tempo,
+            scale: SCALES.indexOf(this.currentScale),
+            mainOscGain: this.mainOscGain * 100,
+            mainOscType: WAVE_TYPES.indexOf(this.mainOscType),
+            mainOscOctave: this.mainOscOctave,
+            subOscGain: this.subOscGain * 100,
+            subOscType: WAVE_TYPES.indexOf(this.subOscType),
+            subOscOctave: this.subOscOctave,
+            attack: this.attack * 1000,
+            filterCutoff: this.filterCutoff,
+            filterResonance: this.filterResonance,
+            glide: this.glideTime,
+            delay: this.delayAmount * 100,
+            delayFeedback: this.feedbackGainLeft.gain.value * 100,
+            reverb: this.wetGain.gain.value * 100
+        };
+    }
+
+    // Add method to apply settings
+    applySettings(settings) {
+        this.setVolume(settings.volume / 100);
+        this.tempo = settings.bpm;
+        this.changeScale(SCALES[settings.scale]);
+        this.setMainOscGain(settings.mainOscGain / 100);
+        this.setMainOscType(WAVE_TYPES[settings.mainOscType]);
+        this.setMainOscOctave(settings.mainOscOctave);
+        this.setSubOscGain(settings.subOscGain / 100);
+        this.setSubOscType(WAVE_TYPES[settings.subOscType]);
+        this.setSubOscOctave(settings.subOscOctave);
+        this.setAttack(settings.attack / 1000);
+        this.setFilterCutoff(settings.filterCutoff);
+        this.setFilterResonance(settings.filterResonance);
+        this.setGlideTime(settings.glide);
+        this.setDelayAmount(settings.delay / 100);
+        this.setDelayFeedback(settings.delayFeedback / 100);
+        this.setReverb(settings.reverb / 100);
+    }
+
+    setupRecording() {
+      this.recordingDestination = this.audioContext.createMediaStreamDestination();
+      this.mainGainNode.connect(this.recordingDestination);
+    }
+
+    // startRecording() {
+    //   if (this.mediaRecorder) return;
+      
+    //   this.recordedChunks = [];
+    //   this.mediaRecorder = new MediaRecorder(this.recordingDestination.stream);
+      
+    //   this.mediaRecorder.ondataavailable = (event) => {
+    //     if (event.data.size > 0) {
+    //       this.recordedChunks.push(event.data);
+    //     }
+    //   };
+      
+    //   this.mediaRecorder.onstop = () => {
+    //     const blob = new Blob(this.recordedChunks, { type: 'audio/wav' });
+    //     const url = URL.createObjectURL(blob);
+    //     const a = document.createElement('a');
+    //     a.href = url;
+    //     a.download = `boteh-recording-${new Date().toISOString()}.wav`;
+    //     a.click();
+    //     URL.revokeObjectURL(url);
+    //   };
+      
+    //   this.mediaRecorder.start();
+    // }
+
+    // stopRecording() {
+    //   if (!this.mediaRecorder) return;
+    //   this.mediaRecorder.stop();
+    //   this.mediaRecorder = null;
+    // }
 }
