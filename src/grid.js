@@ -2,7 +2,7 @@ const cellOpacities = new Map();
 const CIRCLE_LIFESPAN = 2000;
 const FADE_IN_SPEED = 0.05;
 const FADE_OUT_SPEED = 0.05;
-const TARGET_OPACITY = 0.5;
+const TARGET_OPACITY = 0.8;
 
 export function drawGrid(ctx, width, height, gridSize, activeCells, handDetector = null, audioEngine = null) {
     const cellWidth = width / gridSize;
@@ -52,12 +52,12 @@ export function drawGrid(ctx, width, height, gridSize, activeCells, handDetector
             let color;
             if (isPlaying) {
                 color = isExpanded ? 
-                    `rgba(255, 165, 0, ${state.opacity})` :
-                    `rgba(255, 140, 0, ${state.opacity})`;
+                    `rgba(0, 255, 128, ${state.opacity})` :   // Bright green
+                    `rgba(0, 200, 100, ${state.opacity})`;    // Darker green
             } else {
                 color = isExpanded ? 
-                    `rgba(218, 112, 214, ${state.opacity})` :
-                    `rgba(149, 53, 83, ${state.opacity})`;
+                    `rgba(0, 128, 255, ${state.opacity})` :   // Bright blue
+                    `rgba(0, 100, 200, ${state.opacity})`;    // Darker blue
             }
             
             ctx.fillStyle = color;

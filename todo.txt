@@ -1,8 +1,13 @@
-canvas scale
+canvas buttons scale
+finer slide
+better controls on phone
 refactor
+
 multiple synths
 more colours
 circles art
 dots art
 indian scale
 boteh art
+
+record
