@@ -1,3 +1,8 @@
 runtime: nodejs22
 instance_class: F1
 env: standard
+
+handlers:
+- url: /.*
+  script: auto
+  secure: always

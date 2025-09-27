@@ -6,6 +6,9 @@ const CANVAS_SIZE = Math.min(640, 480);
 const SCALES = ['pentatonic', 'major', 'minor', 'harmonicMinor', 'blues'];
 const WAVE_TYPES = ['sine', 'square', 'sawtooth', 'triangle'];
 
+// Mobile detection
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
 const UI = {
     video: document.getElementById('webcam'),
     canvas: document.getElementById('canvas'),
@@ -41,8 +44,6 @@ const UI = {
     mainOscOctaveValue: document.getElementById('mainOscOctaveValue'),
     subOscOctave: document.getElementById('subOscOctave'),
     subOscOctaveValue: document.getElementById('subOscOctaveValue'),
-    glideSlider: document.getElementById('glideSlider'),
-    glideValue: document.getElementById('glideValue'),
     scaleValue: document.getElementById('scaleValue'),
     mainOscTypeValue: document.getElementById('mainOscTypeValue'),
     subOscTypeValue: document.getElementById('subOscTypeValue'),
@@ -55,7 +56,8 @@ const UI = {
     delayFeedbackSlider: document.getElementById('delayFeedbackSlider'),
     delayFeedbackValue: document.getElementById('delayFeedbackValue'),
     gridSizeSlider: document.getElementById('gridSizeSlider'),
-    gridSizeValue: document.getElementById('gridSizeValue'),    presetSlider: document.getElementById('presetSlider'),
+    gridSizeValue: document.getElementById('gridSizeValue'),
+    presetSlider: document.getElementById('presetSlider'),
     presetValue: document.getElementById('presetValue'),
     instanceSlider: document.getElementById('instanceSlider'),
     instanceValue: document.getElementById('instanceValue'),
@@ -68,8 +70,204 @@ let activeAudioEngine = null;
 let currentInstance = 1;
 let handDetector = null;
 let heldNotes = null;
-const cellOpacities = new Map();
+let isSystemActive = false;
 
+// Mobile-specific functions
+function addMobileEventListeners(element, handler) {
+    if (isMobile) {
+        element.addEventListener('touchstart', handler, { passive: false });
+        element.addEventListener('touchend', handler, { passive: false });
+    }
+    element.addEventListener('click', handler);
+}
+
+function preventMobileScroll(e) {
+    if (isMobile) {
+        e.preventDefault();
+    }
+}
+
+// Audio context mobile initialization
+async function initializeAudioContext() {
+    if (isMobile) {
+        // Mobile browsers require user interaction to start audio context
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+            const tempContext = new AudioContext();
+            if (tempContext.state === 'suspended') {
+                try {
+                    await tempContext.resume();
+                    await tempContext.close();
+                } catch (e) {
+                    console.warn('Audio context resume failed:', e);
+                }
+            }
+        }
+    }
+}
+// Add this to your main.js file - replace the current requestCameraPermission function
+
+async function requestCameraPermission() {
+    console.log('Requesting camera permission...');
+    
+    // Enhanced HTTPS check with specific guidance
+    const isSecure = location.protocol === 'https:' || 
+                    location.hostname === 'localhost' || 
+                    location.hostname === '127.0.0.1';
+    
+    if (!isSecure && isMobile) {
+        const currentUrl = location.href;
+        const httpsUrl = currentUrl.replace('http://', 'https://');
+        
+        const errorMsg = `
+            <h3>HTTPS Required</h3>
+            <p>Mobile browsers require HTTPS for camera access.</p>
+            <p><strong>Current URL:</strong> ${currentUrl}</p>
+            <p><strong>Solutions:</strong></p>
+            <ol style="text-align: left; margin: 10px 0;">
+                <li>Try accessing: <a href="${httpsUrl}" style="color: #fff; text-decoration: underline;">${httpsUrl}</a></li>
+                <li>If deployed on GCP, enable HTTPS in your configuration</li>
+                <li>For local development, use <code>https://localhost:3000</code></li>
+            </ol>
+            <button onclick="window.location.href='${httpsUrl}'" style="margin: 10px; padding: 15px 25px; font-size: 16px; background: #fff; color: #ff4444; border: none; border-radius: 5px;">
+                Try HTTPS Version
+            </button>
+        `;
+        
+        if (window.showMobileError) {
+            // Use the enhanced error display
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: #ff4444;
+                color: white;
+                padding: 25px;
+                border-radius: 10px;
+                z-index: 10000;
+                text-align: center;
+                max-width: 90%;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                font-size: 16px;
+                line-height: 1.4;
+            `;
+            errorDiv.innerHTML = errorMsg;
+            document.body.appendChild(errorDiv);
+        } else {
+            alert('Camera requires HTTPS on mobile. Try accessing: ' + httpsUrl);
+        }
+        
+        throw new Error('HTTPS required for camera access on mobile devices');
+    }
+    
+    // Check if getUserMedia is available
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera access is not supported in this browser.');
+    }
+    
+    try {
+        // Rest of your existing camera permission logic...
+        // (keep all the existing code from the current requestCameraPermission function)
+        
+        // First, check existing permissions
+        if (navigator.permissions) {
+            try {
+                const permission = await navigator.permissions.query({ name: 'camera' });
+                console.log('Camera permission status:', permission.state);
+                
+                if (permission.state === 'denied') {
+                    throw new Error('Camera access was previously denied. Please enable camera access in your browser settings and refresh the page.');
+                }
+            } catch (permError) {
+                console.warn('Permission query failed:', permError);
+            }
+        }
+        
+        // Try different constraint configurations for mobile compatibility
+        const constraintSets = [
+            { video: { facingMode: 'user' } },
+            { video: { facingMode: 'user', width: 480, height: 480 } },
+            { video: { facingMode: 'user', width: { ideal: 480, max: 640 }, height: { ideal: 480, max: 640 } } }
+        ];
+        
+        let stream = null;
+        let lastError = null;
+        
+        for (let i = 0; i < constraintSets.length; i++) {
+            try {
+                console.log(`Trying constraint set ${i + 1}:`, constraintSets[i]);
+                stream = await navigator.mediaDevices.getUserMedia(constraintSets[i]);
+                console.log('Camera access granted with constraint set', i + 1);
+                break;
+            } catch (error) {
+                console.warn(`Constraint set ${i + 1} failed:`, error);
+                lastError = error;
+                
+                if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                    throw error;
+                }
+                continue;
+            }
+        }
+        
+        if (!stream) {
+            throw lastError || new Error('Failed to access camera with any constraint set');
+        }
+        
+        // Test that we actually got video
+        const videoTracks = stream.getVideoTracks();
+        if (videoTracks.length === 0) {
+            stream.getTracks().forEach(track => track.stop());
+            throw new Error('No video track found in camera stream');
+        }
+        
+        console.log('Camera stream obtained successfully');
+        
+        // Stop the test stream
+        stream.getTracks().forEach(track => track.stop());
+        
+        return true;
+        
+    } catch (error) {
+        console.error('Camera permission request failed:', error);
+        
+        // Provide specific error messages
+        let userMessage = 'Camera access failed. ';
+        
+        switch (error.name) {
+            case 'NotAllowedError':
+            case 'PermissionDeniedError':
+                userMessage += 'Please allow camera access when prompted. You may need to:\n\n1. Refresh the page and allow when prompted\n2. Check browser settings for camera permissions\n3. Ensure no other apps are using the camera';
+                break;
+            case 'NotFoundError':
+                userMessage += 'No camera found on this device.';
+                break;
+            case 'NotSupportedError':
+                userMessage += 'Camera access is not supported in this browser. Try Chrome or Safari.';
+                break;
+            case 'NotReadableError':
+                userMessage += 'Camera is being used by another app. Please close other camera apps and try again.';
+                break;
+            case 'SecurityError':
+                userMessage += 'Camera blocked due to security restrictions. Make sure you\'re using HTTPS.';
+                break;
+            default:
+                userMessage += error.message || 'Unknown error occurred.';
+        }
+        
+        if (window.showMobileError) {
+            window.showMobileError(userMessage);
+        } else {
+            alert(userMessage);
+        }
+        
+        return false;
+    }
+}
+
+// All your existing handler functions remain the same
 function handleBPMChange(value) {
     const bpm = Math.round(parseFloat(value));
     UI.bpmValue.textContent = bpm;
@@ -108,14 +306,6 @@ function handleAttackChange(value) {
     UI.attackValue.textContent = `${attack.toFixed(3)}s`;
     if (audioEngines.get(currentInstance)) {
         audioEngines.get(currentInstance).setAttack(attack);
-    }
-}
-
-function handleReleaseChange(value) {
-    const release = parseInt(value) / 1000;
-    UI.releaseValue.textContent = `${release.toFixed(3)}s`;
-    if (audioEngines.get(currentInstance)) {
-        audioEngines.get(currentInstance).setRelease(release);
     }
 }
 
@@ -268,7 +458,7 @@ function handleHoldModeChange(value) {
         }
         heldNotes = null;
         
-        const activeCells = handDetector.getActiveCells();
+        const activeCells = handDetector ? handDetector.getActiveCells() : [];
         if (audioEngines.get(currentInstance) && activeCells.length > 0) {
             if (UI.arpMode.value === "1") {
                 audioEngines.get(currentInstance).playArpeggio(activeCells);
@@ -298,14 +488,13 @@ function handleArpModeChange(value) {
         }
 
         audioEngines.get(currentInstance).oscillators.clear();
-        
         audioEngines.get(currentInstance).activeNotes.clear();
         audioEngines.get(currentInstance).lastNotePlayed = null;
 
         setTimeout(() => {
             const activeCells = UI.holdMode.value === "1" && heldNotes ? 
                 heldNotes : 
-                handDetector.getActiveCells();
+                handDetector ? handDetector.getActiveCells() : [];
 
             if (activeCells && activeCells.length > 0) {
                 if (isArpMode) {
@@ -369,109 +558,30 @@ function switchToInstance(instanceId) {
     if (UI.holdMode && UI.holdMode.dataset.state === 'off' && previousEngine) {
         previousEngine.stopAllNotes();
     }
-
-    if (handDetector) {
-        handDetector.onResults = (results) => {
-            if (results.multiHandLandmarks) {
-                results.multiHandLandmarks.forEach(landmarks => {
-                    handDetector.drawFingerDots(landmarks);
-                });
-                
-                const activeCells = handDetector.getActiveCells();
-                drawGrid(ctx, CANVAS_SIZE, CANVAS_SIZE, handDetector.gridSize, activeCells, handDetector, activeAudioEngine);
-                
-                if (activeAudioEngine) {
-                    const newCells = new Set(activeCells.map(cell => `${cell.x},${cell.y}`));
-                    
-                    activeCells.forEach(cell => {
-                        const key = `${cell.x},${cell.y}`;
-                        if (!lastActiveCells.has(key)) {
-                            activeAudioEngine.playNote(cell.x, cell.y);
-                        }
-                    });
-                    
-                    Array.from(lastActiveCells).forEach(key => {
-                        if (!newCells.has(key)) {
-                            const [x, y] = key.split(',').map(Number);
-                            activeAudioEngine.stopNote(x, y);
-                        }
-                    });
-                    
-                    lastActiveCells = newCells;
-                }
-            }
-        };
-    }
 }
-
-document.getElementById('instanceSlider').addEventListener('input', async function() {
-    const newInstanceId = parseInt(this.value);
-    document.getElementById('instanceValue').textContent = newInstanceId;
-
-    if (!AudioEngine.initializedLayers.has(newInstanceId)) {
-        const presets = await loadPresets();
-        const preset1Settings = presets["1"];
-        
-        const newEngine = createInstance(newInstanceId);
-        newEngine.applySettings(preset1Settings);
-        
-        const presetSlider = document.getElementById('presetSlider');
-        presetSlider.value = "1";
-        document.getElementById('presetValue').textContent = "1";
-        
-        AudioEngine.initializedLayers.add(newInstanceId);
-        AudioEngine.layerSettings.set(newInstanceId, preset1Settings);
-    } else {
-
-        const savedSettings = AudioEngine.layerSettings.get(newInstanceId);
-        if (savedSettings) {
-            const engine = createInstance(newInstanceId);
-            engine.applySettings(savedSettings);
-            
-            if (savedSettings.preset) {
-                const presetSlider = document.getElementById('presetSlider');
-                presetSlider.value = savedSettings.preset.toString();
-                document.getElementById('presetValue').textContent = savedSettings.preset.toString();
-            }
-        }
-    }
-
-    switchToInstance(newInstanceId);
-});
-
-document.getElementById('presetSlider').addEventListener('input', async function() {
-    const preset = this.value;
-    document.getElementById('presetValue').textContent = preset;
-
-    const currentInstanceId = parseInt(document.getElementById('instanceSlider').value);
-    const presets = await loadPresets();
-    const presetSettings = presets[preset];
-
-    presetSettings.preset = parseInt(preset);
-
-    if (audioEngines.get(currentInstanceId)) {
-        audioEngines.get(currentInstanceId).applySettings(presetSettings);
-        AudioEngine.layerSettings.set(currentInstanceId, presetSettings);
-    }
-});
-
-
-document.addEventListener('DOMContentLoaded', () => {
-    //
-    activeAudioEngine = createInstance(1);
-});
 
 async function initializeApp() {
     try {
+        // Initialize audio context first on mobile
+        await initializeAudioContext();
+        
+        // Request camera permission
+        const hasCamera = await requestCameraPermission();
+        if (!hasCamera) {
+            throw new Error('Camera access denied');
+        }
+        
         validateUIElements();
 
         UI.video.classList.remove('hidden');
         UI.controls.classList.remove('disabled');
 
         audioEngines.set(1, new AudioEngine());
+        activeAudioEngine = audioEngines.get(1);
         
         handDetector = new HandDetector(UI.video, UI.canvas);
         
+        // Initialize UI values
         UI.bpmSlider.value = audioEngines.get(currentInstance).tempo;
         UI.bpmValue.textContent = audioEngines.get(currentInstance).tempo;
         
@@ -493,15 +603,6 @@ async function initializeApp() {
         UI.scaleSelect.value = "0"; 
         handleScaleChange("0");  
 
-        UI.arpMode.value = "1";  
-        UI.arpMode.dataset.state = 'on';  
-        UI.arpModeValue.textContent = 'On'; 
-        
-        UI.expandMode.value = "0";
-        UI.expandModeValue.textContent = 'Off';
-        UI.holdMode.value = "0";
-        UI.holdModeValue.textContent = 'Off';
-
         UI.mainOscOctave.value = audioEngines.get(currentInstance).mainOscOctave;
         UI.mainOscOctaveValue.textContent = audioEngines.get(currentInstance).mainOscOctave;
         UI.subOscOctave.value = audioEngines.get(currentInstance).subOscOctave;
@@ -512,65 +613,11 @@ async function initializeApp() {
 
         UI.pitchSlider.value = 0;
         UI.pitchValue.textContent = "0 st";
-        UI.pitchSlider.addEventListener('input', (e) => handlePitchChange(e.target.value));
 
-        UI.bpmSlider.addEventListener('input', (e) => handleBPMChange(e.target.value));
-        UI.bpmSlider.addEventListener('change', (e) => handleBPMChange(e.target.value));
+        // Add event listeners with mobile support
+        setupEventListeners();
         
-        UI.delaySlider.addEventListener('input', (e) => handleDelayChange(e.target.value));
-        UI.delaySlider.addEventListener('change', (e) => handleDelayChange(e.target.value));
-
-        UI.delayFeedbackSlider.addEventListener('input', (e) => handleDelayFeedbackChange(e.target.value));
-        
-        UI.expandMode.addEventListener('input', (e) => handleExpandModeChange(e.target.value));
-
-        UI.holdMode.addEventListener('input', (e) => handleHoldModeChange(e.target.value));
-
-        UI.arpMode.addEventListener('input', (e) => handleArpModeChange(e.target.value));
-
-        UI.scaleSelect.addEventListener('change', (e) => {
-            if (audioEngines.get(currentInstance)) {
-                audioEngines.get(currentInstance).changeScale(e.target.value);
-            }
-        });
-
-        UI.volumeSlider.addEventListener('input', (e) => handleVolumeChange(e.target.value));
-        UI.attackSlider.addEventListener('input', (e) => handleAttackChange(e.target.value));
-        UI.reverbSlider.addEventListener('input', (e) => handleReverbChange(e.target.value));
-        UI.mainOscGainSlider.addEventListener('input', (e) => handleMainOscGainChange(e.target.value));
-        UI.subOscGainSlider.addEventListener('input', (e) => handleSubOscGainChange(e.target.value));
-        
-        UI.mainOscType.addEventListener('change', (e) => handleMainOscTypeChange(e.target.value));
-        UI.subOscType.addEventListener('change', (e) => handleSubOscTypeChange(e.target.value));
-        
-        UI.mainOscOctave.addEventListener('input', (e) => handleMainOscOctaveChange(e.target.value));
-        UI.subOscOctave.addEventListener('input', (e) => handleSubOscOctaveChange(e.target.value));
-        
-        UI.glideSlider.addEventListener('input', (e) => handleGlideChange(e.target.value));
-        
-        UI.scaleSelect.addEventListener('input', e => handleScaleChange(e.target.value));
-        UI.mainOscType.addEventListener('input', e => handleMainOscTypeChange(e.target.value));
-        UI.subOscType.addEventListener('input', e => handleSubOscTypeChange(e.target.value));
-        UI.expandMode.addEventListener('input', e => handleExpandModeChange(e.target.value));
-        UI.arpMode.addEventListener('input', e => handleArpModeChange(e.target.value));
-        UI.holdMode.addEventListener('input', e => handleHoldModeChange(e.target.value));
-
-        handleScaleChange(UI.scaleSelect.value);
-        handleMainOscTypeChange(UI.mainOscType.value);
-        handleSubOscTypeChange(UI.subOscType.value);
-
-        UI.filterCutoffSlider.addEventListener('input', (e) => handleFilterCutoffChange(e.target.value));
-        UI.filterResonanceSlider.addEventListener('input', (e) => handleFilterResonanceChange(e.target.value));
-        
-        handleFilterCutoffChange(UI.filterCutoffSlider.value);
-        handleFilterResonanceChange(UI.filterResonanceSlider.value);
-
-        UI.gridSizeSlider.value = HandDetector.GRID_SIZE;
-        UI.gridSizeValue.textContent = HandDetector.GRID_SIZE;
-        
-        UI.gridSizeSlider.addEventListener('input', (e) => handleGridSizeChange(e.target.value));
-
-        handDetector.start((results) => {
+        await handDetector.start((results) => {
             UI.canvas.width = UI.video.width = CANVAS_SIZE;
             UI.canvas.height = UI.video.height = CANVAS_SIZE;
             
@@ -632,6 +679,7 @@ async function initializeApp() {
                 audioEngines.get(currentInstance)  
             );
             
+            // Handle note playing logic
             if (UI.holdMode.value === "0") {
                 const currentActiveCellsSet = new Set(activeCells.map(cell => `${cell.x},${cell.y}`));
                 
@@ -676,18 +724,120 @@ async function initializeApp() {
             
             canvasCtx.restore();
         });
+        
+        isSystemActive = true;
+        
     } catch (error) {
         console.error('Error initializing app:', error);
-        alert('Error initializing the application. Please check camera permissions.');
+        
+        // Show mobile-friendly error
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #ff4444;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
+            text-align: center;
+            max-width: 80%;
+            font-size: ${isMobile ? '18px' : '14px'};
+        `;
+        errorDiv.innerHTML = `
+            <h3>Initialization Failed</h3>
+            <p>${error.message}</p>
+            <p>Please check camera permissions and try again</p>
+            <button onclick="location.reload()" style="margin-top: 10px; padding: 15px 25px; font-size: 16px;">Refresh</button>
+        `;
+        document.body.appendChild(errorDiv);
         
         UI.masterSwitch.value = "0";
         UI.masterSwitchValue.textContent = 'Off';
+        UI.masterSwitch.dataset.state = 'off';
         UI.controls.classList.add('disabled');
         UI.video.classList.add('hidden');
     }
 }
 
+function setupEventListeners() {
+    // Use mobile-compatible event handlers for all interactive elements
+    
+    UI.bpmSlider.addEventListener('input', (e) => handleBPMChange(e.target.value));
+    UI.bpmSlider.addEventListener('change', (e) => handleBPMChange(e.target.value));
+    
+    UI.delaySlider.addEventListener('input', (e) => handleDelayChange(e.target.value));
+    UI.delaySlider.addEventListener('change', (e) => handleDelayChange(e.target.value));
+
+    UI.delayFeedbackSlider.addEventListener('input', (e) => handleDelayFeedbackChange(e.target.value));
+    
+    UI.volumeSlider.addEventListener('input', (e) => handleVolumeChange(e.target.value));
+    UI.attackSlider.addEventListener('input', (e) => handleAttackChange(e.target.value));
+    UI.reverbSlider.addEventListener('input', (e) => handleReverbChange(e.target.value));
+    UI.mainOscGainSlider.addEventListener('input', (e) => handleMainOscGainChange(e.target.value));
+    UI.subOscGainSlider.addEventListener('input', (e) => handleSubOscGainChange(e.target.value));
+    
+    UI.mainOscType.addEventListener('change', (e) => handleMainOscTypeChange(e.target.value));
+    UI.subOscType.addEventListener('change', (e) => handleSubOscTypeChange(e.target.value));
+    
+    UI.mainOscOctave.addEventListener('input', (e) => handleMainOscOctaveChange(e.target.value));
+    UI.subOscOctave.addEventListener('input', (e) => handleSubOscOctaveChange(e.target.value));
+    
+    UI.glideSlider.addEventListener('input', (e) => handleGlideChange(e.target.value));
+    
+    UI.scaleSelect.addEventListener('change', (e) => {
+        if (audioEngines.get(currentInstance)) {
+            audioEngines.get(currentInstance).changeScale(e.target.value);
+        }
+    });
+    
+    UI.scaleSelect.addEventListener('input', e => handleScaleChange(e.target.value));
+    UI.mainOscType.addEventListener('input', e => handleMainOscTypeChange(e.target.value));
+    UI.subOscType.addEventListener('input', e => handleSubOscTypeChange(e.target.value));
+
+    UI.filterCutoffSlider.addEventListener('input', (e) => handleFilterCutoffChange(e.target.value));
+    UI.filterResonanceSlider.addEventListener('input', (e) => handleFilterResonanceChange(e.target.value));
+    
+    handleFilterCutoffChange(UI.filterCutoffSlider.value);
+    handleFilterResonanceChange(UI.filterResonanceSlider.value);
+
+    UI.gridSizeSlider.value = HandDetector.GRID_SIZE;
+    UI.gridSizeValue.textContent = HandDetector.GRID_SIZE;
+    
+    UI.gridSizeSlider.addEventListener('input', (e) => handleGridSizeChange(e.target.value));
+    
+    UI.pitchSlider.addEventListener('input', (e) => handlePitchChange(e.target.value));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Mobile-specific setup
+    if (isMobile) {
+        document.body.style.touchAction = 'none';
+        document.body.style.overflow = 'hidden';
+        
+        // Prevent zoom on double-tap
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+        
+        // Improve text rendering on mobile
+        const canvas = UI.canvas;
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        canvas.style.width = CANVAS_SIZE + 'px';
+        canvas.style.height = CANVAS_SIZE + 'px';
+        canvas.width = CANVAS_SIZE * dpr;
+        canvas.height = CANVAS_SIZE * dpr;
+        ctx.scale(dpr, dpr);
+    }
+    
     UI.canvas.width = UI.canvas.height = CANVAS_SIZE;
     
     const ctx = UI.canvas.getContext('2d');
@@ -708,25 +858,48 @@ document.addEventListener('DOMContentLoaded', () => {
     UI.holdMode.dataset.state = 'off';
     UI.holdModeValue.textContent = 'Off';
 
-    UI.masterSwitch.addEventListener('click', (e) => {
-        const button = e.currentTarget;
-        const newState = button.dataset.state === 'on' ? 'off' : 'on';
-        button.dataset.state = newState;
-        UI.masterSwitchValue.textContent = newState === 'on' ? 'On' : 'Off';
+    // Master switch handler with mobile support
+    addMobileEventListeners(UI.masterSwitch, async (e) => {
+        e.preventDefault();
+        preventMobileScroll(e);
         
-        if (newState === 'on') {
-            initializeApp();        
-        } else {
+        const button = e.currentTarget;
+        const currentState = button.dataset.state;
+        
+        if (currentState === 'on') {
+            // Turn off
+            button.dataset.state = 'off';
+            UI.masterSwitchValue.textContent = 'Off';
             shutdownSystem();
             
             if (UI.recordButton && UI.recordButton.getAttribute('data-state') === 'on') {
                 UI.recordButton.click();
             }
+        } else {
+            // Turn on - requires user interaction for audio/camera
+            button.dataset.state = 'on';
+            UI.masterSwitchValue.textContent = 'On';
+            
+            // Show loading state
+            const originalText = UI.masterSwitchValue.textContent;
+            UI.masterSwitchValue.textContent = 'Loading...';
+            
+            try {
+                await initializeApp();
+            } catch (error) {
+                button.dataset.state = 'off';
+                UI.masterSwitchValue.textContent = 'Off';
+                console.error('Failed to initialize:', error);
+            }
         }
     });
 
-    UI.expandMode.addEventListener('click', (e) => {
+    // Mode switches with mobile support
+    addMobileEventListeners(UI.expandMode, (e) => {
         if (UI.masterSwitch.dataset.state !== 'on') return;
+        e.preventDefault();
+        preventMobileScroll(e);
+        
         const button = e.currentTarget;
         const newState = button.dataset.state === 'on' ? 'off' : 'on';
         button.dataset.state = newState;
@@ -734,8 +907,11 @@ document.addEventListener('DOMContentLoaded', () => {
         handleExpandModeChange(newState === 'on' ? '1' : '0');
     });
 
-    UI.arpMode.addEventListener('click', (e) => {
+    addMobileEventListeners(UI.arpMode, (e) => {
         if (UI.masterSwitch.dataset.state !== 'on') return;
+        e.preventDefault();
+        preventMobileScroll(e);
+        
         const button = e.currentTarget;
         const newState = button.dataset.state === 'on' ? 'off' : 'on';
         button.dataset.state = newState;
@@ -743,8 +919,11 @@ document.addEventListener('DOMContentLoaded', () => {
         handleArpModeChange(newState === 'on' ? '1' : '0');
     });
 
-    UI.holdMode.addEventListener('click', (e) => {
+    addMobileEventListeners(UI.holdMode, (e) => {
         if (UI.masterSwitch.dataset.state !== 'on') return;
+        e.preventDefault();
+        preventMobileScroll(e);
+        
         const button = e.currentTarget;
         const newState = button.dataset.state === 'on' ? 'off' : 'on';
         button.dataset.state = newState;
@@ -752,6 +931,7 @@ document.addEventListener('DOMContentLoaded', () => {
         handleHoldModeChange(newState === 'on' ? '1' : '0');
     });
 
+    // Preset and instance handlers
     UI.presetSlider.addEventListener('input', async (e) => {
         const presetNumber = e.target.value;
         UI.presetValue.textContent = presetNumber;
@@ -767,34 +947,39 @@ document.addEventListener('DOMContentLoaded', () => {
         UI.instanceValue.textContent = instanceId;
         switchToInstance(instanceId);
     });
+    
+    // Record button with mobile support
+    if (UI.recordButton) {
+        const recordButtonValue = document.getElementById('recordButtonValue');
+        if (recordButtonValue) {
+            recordButtonValue.textContent = 'Off';
+        }
+        
+        addMobileEventListeners(UI.recordButton, (e) => {
+            e.preventDefault();
+            preventMobileScroll(e);
+            
+            const isRecording = UI.recordButton.getAttribute('data-state') === 'on';
+            const currentAudioEngine = audioEngines.get(currentInstance);
+            
+            if (!isRecording) {
+                currentAudioEngine?.startRecording();
+                UI.recordButton.setAttribute('data-state', 'on');
+                if (recordButtonValue) {
+                    recordButtonValue.textContent = 'On';
+                }
+            } else {
+                currentAudioEngine?.stopRecording();
+                UI.recordButton.setAttribute('data-state', 'off');
+                if (recordButtonValue) {
+                    recordButtonValue.textContent = 'Off';
+                }
+            }
+        });
+    }
 });
 
-if (UI.recordButton) {
-    const recordButtonValue = document.getElementById('recordButtonValue');
-    if (recordButtonValue) {
-        recordButtonValue.textContent = 'Off';
-    }
-    
-    UI.recordButton.addEventListener('click', () => {
-        const isRecording = UI.recordButton.getAttribute('data-state') === 'on';
-        const currentAudioEngine = audioEngines.get(currentInstance);
-        
-        if (!isRecording) {
-            currentAudioEngine?.startRecording();
-            UI.recordButton.setAttribute('data-state', 'on');
-            if (recordButtonValue) {
-                recordButtonValue.textContent = 'On';
-            }
-        } else {
-            currentAudioEngine?.stopRecording();
-            UI.recordButton.setAttribute('data-state', 'off');
-            if (recordButtonValue) {
-                recordButtonValue.textContent = 'Off';
-            }
-        }
-    });
-}
-
+// Additional mobile-specific handlers
 function handlePitchChange(value) {
     const cents = parseInt(value);
     const semitones = cents / 100;
@@ -883,7 +1068,6 @@ async function shutdownSystem() {
                     audioEngines.get(currentInstance).stopNote(cell.x, cell.y);
                 });
             }
-            audioEngines.get(currentInstance) = null;
         }
 
         if (handDetector) {
@@ -892,7 +1076,6 @@ async function shutdownSystem() {
         }
         
         UI.video.classList.add('hidden');
-        
         UI.controls.classList.add('disabled');
         
         const ctx = UI.canvas.getContext('2d');
@@ -901,22 +1084,25 @@ async function shutdownSystem() {
         
         lastActiveCells = new Set();
         heldNotes = null;
+        isSystemActive = false;
     } catch (error) {
         console.warn('Non-critical error during shutdown:', error);
     }
 }
 
 function drawInitialState(ctx) {
+    // Clear canvas
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     
+    // Mobile-optimized text rendering
     ctx.fillStyle = '#888';
-    ctx.font = '16px monospace';
+    ctx.font = isMobile ? '20px Arial, sans-serif' : '16px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
     const text = ['turn power on', 'and wave your', 'fingers around'];
-    const lineHeight = 30;
+    const lineHeight = isMobile ? 35 : 30;
     const startY = (CANVAS_SIZE / 2) - ((text.length - 1) * lineHeight / 2);
     
     text.forEach((line, i) => {
@@ -957,32 +1143,4 @@ function handleGridSizeChange(value) {
     const ctx = UI.canvas.getContext('2d');
     ctx.clearRect(0, 0, UI.canvas.width, UI.canvas.height);
     drawGrid(ctx, CANVAS_SIZE, CANVAS_SIZE, size, []);
-}
-
-function handleMasterSwitchClick(e) {
-    const button = e.currentTarget;
-    const newState = button.dataset.state === 'on' ? 'off' : 'on';
-    button.dataset.state = newState;
-    handleMasterSwitch({ target: { value: newState === 'on' ? '1' : '0' }});
-}
-
-function handleExpandModeClick(e) {
-    const button = e.currentTarget;
-    const newState = button.dataset.state === 'on' ? 'off' : 'on';
-    button.dataset.state = newState;
-    handleExpandModeChange(newState === 'on' ? '1' : '0');
-}
-
-function handleArpModeClick(e) {
-    const button = e.currentTarget;
-    const newState = button.dataset.state === 'on' ? 'off' : 'on';
-    button.dataset.state = newState;
-    handleArpModeChange(newState === 'on' ? '1' : '0');
-}
-
-function handleHoldModeClick(e) {
-    const button = e.currentTarget;
-    const newState = button.dataset.state === 'on' ? 'off' : 'on';
-    button.dataset.state = newState;
-    handleHoldModeChange(newState === 'on' ? '1' : '0');
 }
